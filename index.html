@@ -28,16 +28,16 @@
         <div class="tab-content">
             <div id="bloodSugar" class="tab-pane fade show active">
                 <h2>換算血糖單位</h2>
-                <input type="number" id="mmolInput" class="form-control mb-2" placeholder="輸入 mmol/L" oninput="convertBloodSugar()">
+                <input type="tel" id="mmolInput" class="form-control mb-2" placeholder="輸入 mmol/L" inputmode="numeric" oninput="convertBloodSugar()">
                 <p id="mgdlOutput" class="result"></p>
             </div>
 
             <div id="foodCarb" class="tab-pane fade">
                 <h2>計算食物糖質</h2>
-                <input type="number" id="calories" class="form-control mb-2" placeholder="卡路里" oninput="calculateCarbs()">
-                <input type="number" id="protein" class="form-control mb-2" placeholder="蛋白質（g）" oninput="calculateCarbs()">
-                <input type="number" id="fat" class="form-control mb-2" placeholder="脂質（g）" oninput="calculateCarbs()">
-                <input type="number" id="fiber" class="form-control mb-2" placeholder="食物纖維（g）" oninput="calculateCarbs()">
+                <input type="tel" id="calories" class="form-control mb-2" placeholder="卡路里" inputmode="numeric" oninput="calculateCarbs()">
+                <input type="tel" id="protein" class="form-control mb-2" placeholder="蛋白質（g）" inputmode="numeric" oninput="calculateCarbs()">
+                <input type="tel" id="fat" class="form-control mb-2" placeholder="脂質（g）" inputmode="numeric" oninput="calculateCarbs()">
+                <input type="tel" id="fiber" class="form-control mb-2" placeholder="食物纖維（g）" inputmode="numeric" oninput="calculateCarbs()">
                 <p id="carbOutput" class="result"></p>
             </div>
         </div>
