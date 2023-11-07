@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- 引入 Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .result {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #007bff;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -21,7 +29,7 @@
             <div id="bloodSugar" class="tab-pane fade show active">
                 <h2>換算血糖單位</h2>
                 <input type="number" id="mmolInput" class="form-control mb-2" placeholder="輸入 mmol/L" oninput="convertBloodSugar()">
-                <p id="mgdlOutput"></p>
+                <p id="mgdlOutput" class="result"></p>
             </div>
 
             <div id="foodCarb" class="tab-pane fade">
@@ -29,7 +37,8 @@
                 <input type="number" id="calories" class="form-control mb-2" placeholder="卡路里" oninput="calculateCarbs()">
                 <input type="number" id="protein" class="form-control mb-2" placeholder="蛋白質（g）" oninput="calculateCarbs()">
                 <input type="number" id="fat" class="form-control mb-2" placeholder="脂質（g）" oninput="calculateCarbs()">
-                <p id="carbOutput"></p>
+                <input type="number" id="fiber" class="form-control mb-2" placeholder="食物纖維（g）" oninput="calculateCarbs()">
+                <p id="carbOutput" class="result"></p>
             </div>
         </div>
     </div>
@@ -52,10 +61,11 @@
             var calories = parseFloat(document.getElementById("calories").value);
             var protein = parseFloat(document.getElementById("protein").value);
             var fat = parseFloat(document.getElementById("fat").value);
+            var fiber = parseFloat(document.getElementById("fiber").value);
 
-            if (!isNaN(calories) && !isNaN(protein) && !isNaN(fat)) {
+            if (!isNaN(calories) && !isNaN(protein) && !isNaN(fat) && !isNaN(fiber)) {
                 var carbOutput = document.getElementById("carbOutput");
-                var carbValue = (calories - (protein * 4) - (fat * 9)) / 4;
+                var carbValue = ((calories - (protein * 4) - (fat * 9)) / 4) - fiber;
                 carbOutput.textContent = "計算結果為 " + carbValue + "g 糖質";
             }
         }
