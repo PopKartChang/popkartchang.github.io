@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
-    <title>簡單網站</title>
+    <meta charset="UTF-8">
+    <title>計算</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- 引入 Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
@@ -18,26 +19,26 @@
     <div class="container">
         <ul class="nav nav-tabs">
             <li class="nav-item">
-                <a class="nav-link active" data-toggle="tab" href="#bloodSugar">換算血糖單位</a>
+                <a class="nav-link active" data-toggle="tab" href="#bloodSugar">血糖換算 / 血糖換算</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" data-toggle="tab" href="#foodCarb">計算食物糖質</a>
+                <a class="nav-link" data-toggle="tab" href="#foodCarb">食物糖質計算 / 食品糖質計算</a>
             </li>
         </ul>
 
         <div class="tab-content">
-            <div id="bloodSugar" class="tab-pane fade show active">
-                <h2>換算血糖單位</h2>
-                <input type="tel" id="mmolInput" class="form-control mb-2" placeholder="輸入 mmol/L" inputmode="numeric" oninput="convertBloodSugar()">
+            <div id="bloodSugar" class="tab-pane fade show active text-center">
+                <h2>血糖換算 / 血糖換算</h2>
+                <input type="tel" id="mmolInput" class="form-control mb-2" placeholder="輸入 mmol/L / mmol/L を入力" inputmode="numeric" oninput="convertBloodSugar()">
                 <p id="mgdlOutput" class="result"></p>
             </div>
 
-            <div id="foodCarb" class="tab-pane fade">
-                <h2>計算食物糖質</h2>
-                <input type="tel" id="calories" class="form-control mb-2" placeholder="卡路里" inputmode="numeric" oninput="calculateCarbs()">
-                <input type="tel" id="protein" class="form-control mb-2" placeholder="蛋白質（g）" inputmode="numeric" oninput="calculateCarbs()">
-                <input type="tel" id="fat" class="form-control mb-2" placeholder="脂質（g）" inputmode="numeric" oninput="calculateCarbs()">
-                <input type="tel" id="fiber" class="form-control mb-2" placeholder="食物纖維（g）" inputmode="numeric" oninput="calculateCarbs()">
+            <div id="foodCarb" class="tab-pane fade text-center">
+                <h2>食物糖質計算 / 食品糖質計算</h2>
+                <input type="tel" id="calories" class="form-control mb-2" placeholder="卡路里 / カロリー" inputmode="numeric" oninput="calculateCarbs()">
+                <input type="tel" id="protein" class="form-control mb-2" placeholder="蛋白質（g） / タンパク質（g）" inputmode="numeric" oninput="calculateCarbs()">
+                <input type="tel" id="fat" class="form-control mb-2" placeholder="脂質（g） / 脂質（g）" inputmode="numeric" oninput="calculateCarbs()">
+                <input type="tel" id="fiber" class="form-control mb-2" placeholder="食物纖維（g） / 食物繊維（g）" inputmode="numeric" oninput="calculateCarbs()">
                 <p id="carbOutput" class="result"></p>
             </div>
         </div>
@@ -53,7 +54,7 @@
             if (!isNaN(mmolInput)) {
                 var mgdlOutput = document.getElementById("mgdlOutput");
                 var mgdlValue = mmolInput * 18.0182;
-                mgdlOutput.textContent = "換算結果為 " + mgdlValue + " mg/dL";
+                mgdlOutput.textContent = "換算結果為 " + mgdlValue + " mg/dL / 変換結果は " + mgdlValue + " mg/dL";
             }
         }
 
@@ -66,7 +67,7 @@
             if (!isNaN(calories) && !isNaN(protein) && !isNaN(fat) && !isNaN(fiber)) {
                 var carbOutput = document.getElementById("carbOutput");
                 var carbValue = ((calories - (protein * 4) - (fat * 9)) / 4) - fiber;
-                carbOutput.textContent = "計算結果為 " + carbValue + "g 糖質";
+                carbOutput.textContent = "計算結果為 " + carbValue + "g 糖質 / 計算結果は " + carbValue + "g 糖質";
             }
         }
     </script>
