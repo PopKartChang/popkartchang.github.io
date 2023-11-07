@@ -63,26 +63,26 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
-    <script>
-        function convertBloodSugar() {
-            var mmolInput = parseFloat(document.getElementById("mmolInput").value);
-            if (!isNaN(mmolInput)) {
-                var mgdlOutput = document.getElementById("mgdlOutput");
-                var mgdlValue = mmolInput * 18.0182;
-                mgdlOutput.textContent = "結果 " + mgdlValue + " mg/dL";
-            }
+ <script>
+    function convertBloodSugar() {
+        var mmolInput = parseFloat(document.getElementById("mmolInput").value);
+        if (!isNaN(mmolInput)) {
+            var mgdlOutput = document.getElementById("mgdlOutput");
+            var mgdlValue = (mmolInput * 18.0182).toFixed(2); // 四捨五入至小數點第二位
+            mgdlOutput.textContent = "結果 " + mgdlValue + " mg/dL";
         }
+    }
 
-        function calculateCarbs() {
-            var calories = parseFloat(document.getElementById("calories").value) || 0;
-            var protein = parseFloat(document.getElementById("protein").value) || 0;
-            var fat = parseFloat(document.getElementById("fat").value) || 0;
-            var fiber = parseFloat(document.getElementById("fiber").value) || 0;
+    function calculateCarbs() {
+        var calories = parseFloat(document.getElementById("calories").value) || 0;
+        var protein = parseFloat(document.getElementById("protein").value) || 0;
+        var fat = parseFloat(document.getElementById("fat").value) || 0;
+        var fiber = parseFloat(document.getElementById("fiber").value) || 0;
 
-            var carbOutput = document.getElementById("carbOutput");
-            var carbValue = ((calories - (protein * 4) - (fat * 9)) / 4) - fiber;
-            carbOutput.textContent = "結果 : 糖質 " + carbValue + "g ";
-        }
-    </script>
+        var carbOutput = document.getElementById("carbOutput");
+        var carbValue = (((calories - (protein * 4) - (fat * 9)) / 4) - fiber).toFixed(2); // 四捨五入至小數點第二位
+        carbOutput.textContent = "結果 : 糖質 " + carbValue + "g ";
+    }
+</script>
 </body>
 </html>
