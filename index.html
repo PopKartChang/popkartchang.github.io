@@ -1,9 +1,70 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-  <head>
-    <title>This is the title of the webpage!</title>
-  </head>
-  <body>
-    <p>This is an example paragraph. Anything in the <strong>body</strong> tag will appear on the page, just like this <strong>p</strong> tag and its contents.</p>
-  </body>
+<head>
+    <title>簡單網站</title>
+    <!-- 引入 Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <a class="nav-link active" data-toggle="tab" href="#bloodSugar">換算血糖單位</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#foodCarb">計算食物糖質</a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <div id="bloodSugar" class="tab-pane fade show active">
+            <h2>換算血糖單位</h2>
+            <input type="number" id="mmolInput" class="form-control mb-2" placeholder="輸入 mmol/L">
+            <button class="btn btn-primary mb-2" onclick="convertBloodSugar()">換算</button>
+            <p id="mgdlOutput"></p>
+        </div>
+
+        <div id="foodCarb" class="tab-pane fade">
+            <h2>計算食物糖質</h2>
+            <input type="number" id="calories" class="form-control mb-2" placeholder="卡路里">
+            <input type="number" id="protein" class="form-control mb-2" placeholder="蛋白質（g）">
+            <input type="number" id="fat" class="form-control mb-2" placeholder="脂質（g）">
+            <button class="btn btn-primary mb-2" onclick="calculateCarbs()">計算</button>
+            <p id="carbOutput"></p>
+        </div>
+    </div>
+
+    <!-- 引入 Bootstrap 和 jQuery JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+     <script>
+        // 切換分頁的功能
+        function openTab(event, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].classList.remove("active");
+            }
+            document.getElementById(tabName).classList.add("active");
+        }
+
+        // 換算血糖單位
+        function convertBloodSugar() {
+            var mmolInput = document.getElementById("mmolInput").value;
+            var mgdlOutput = document.getElementById("mgdlOutput");
+            var mgdlValue = mmolInput * 18.0182;
+            mgdlOutput.innerHTML = "換算結果為 " + mgdlValue + " mg/dL";
+        }
+
+        // 計算食物糖質
+        function calculateCarbs() {
+            var calories = parseFloat(document.getElementById("calories").value);
+            var protein = parseFloat(document.getElementById("protein").value);
+            var fat = parseFloat(document.getElementById("fat").value);
+            var carbOutput = document.getElementById("carbOutput");
+            var carbValue = (calories - (protein * 4) - (fat * 9)) / 4;
+            carbOutput.innerHTML = "計算結果為 " + carbValue + "g 糖質";
+        }
+    </script>
+</body>
 </html>
