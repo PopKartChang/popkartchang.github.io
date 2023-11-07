@@ -6,12 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- 引入 Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-<link rel="manifest" href="/site.webmanifest">
-<meta name="msapplication-TileColor" content="#da532c">
-<meta name="theme-color" content="#ffffff">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="theme-color" content="#ffffff">
     <style>
         .result {
             font-size: 1.2em;
@@ -35,16 +35,16 @@
         <div class="tab-content">
             <div id="bloodSugar" class="tab-pane fade show active text-center">
                 <h2>血糖換算</h2>
-                <input type="tel" id="mmolInput" class="form-control mb-2" placeholder="mmol/L" inputmode="numeric" oninput="convertBloodSugar()">
+                <input type="number" id="mmolInput" class="form-control mb-2" placeholder="mmol/L" inputmode="decimal" oninput="convertBloodSugar()" step="0.01">
                 <p id="mgdlOutput" class="result"></p>
             </div>
 
             <div id="foodCarb" class="tab-pane fade text-center">
                 <h2>糖質計算</h2>
-                <input type="tel" id="calories" class="form-control mb-2" placeholder="卡路里 / カロリー" inputmode="numeric" oninput="calculateCarbs()">
-                <input type="tel" id="protein" class="form-control mb-2" placeholder="蛋白質（g） / タンパク質（g）" inputmode="numeric" oninput="calculateCarbs()">
-                <input type="tel" id="fat" class="form-control mb-2" placeholder="脂質（g） / 脂質（g）" inputmode="numeric" oninput="calculateCarbs()">
-                <input type="tel" id="fiber" class="form-control mb-2" placeholder="食物纖維（g） / 食物繊維（g）" inputmode="numeric" oninput="calculateCarbs()">
+                <input type="number" id="calories" class="form-control mb-2" placeholder="卡路里 / カロリー" inputmode="decimal" oninput="calculateCarbs()" step="0.01">
+                <input type="number" id="protein" class="form-control mb-2" placeholder="蛋白質（g） / タンパク質（g）" inputmode="decimal" oninput="calculateCarbs()" step="0.01">
+                <input type="number" id="fat" class="form-control mb-2" placeholder="脂質（g） / 脂質（g）" inputmode="decimal" oninput="calculateCarbs()" step="0.01">
+                <input type="number" id="fiber" class="form-control mb-2" placeholder="食物纖維（g） / 食物繊維（g）" inputmode="decimal" oninput="calculateCarbs()" step="0.01">
                 <p id="carbOutput" class="result"></p>
             </div>
         </div>
