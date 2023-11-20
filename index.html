@@ -19,6 +19,11 @@
             color: #007bff;
             margin-top: 10px;
         }
+
+        /* 新增的樣式 */
+        #bloodSugarHistory {
+            margin-top: 20px;
+        }
     </style>
 </head>
 <!-- Google tag (gtag.js) -->
@@ -44,16 +49,35 @@
         <div class="tab-content">
             <div id="bloodSugar" class="tab-pane fade show active text-center">
                 <h2>血糖換算</h2>
-                <input type="number" id="mmolInput" class="form-control mb-2" placeholder="mmol/L" inputmode="decimal" oninput="convertBloodSugar()" step="0.01">
+                <input type="number" id="mmolInput" class="form-control mb-2" placeholder="mmol/L" inputmode="decimal" step="0.01" oninput="convertBloodSugar()">
                 <p id="mgdlOutput" class="result"></p>
+                <button class="btn btn-secondary" onclick="clearBloodSugar()">清除</button>
+                <button class="btn btn-secondary" onclick="saveToCookie()">保存</button>
+                
+                <!-- 歷史記錄表格移到這裡 -->
+                <div id="bloodSugarHistory">
+                    <h2>血糖換算歷史記錄</h2>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">日期時間</th>
+                                <th scope="col">mmol/L</th>
+                                <th scope="col">mg/dL</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyBody">
+                            <!-- 歷史記錄內容會動態插入這裡 -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <div id="foodCarb" class="tab-pane fade text-center">
                 <h2>糖質計算</h2>
-                <input type="number" id="calories" class="form-control mb-2" placeholder="卡路里 / カロリー" inputmode="decimal" oninput="calculateCarbs()" step="0.01">
-                <input type="number" id="protein" class="form-control mb-2" placeholder="蛋白質（g） / タンパク質（g)" inputmode="decimal" oninput="calculateCarbs()" step="0.01">
-                <input type="number" id="fat" class="form-control mb-2" placeholder="脂質（g） / 脂質（g)" inputmode="decimal" oninput="calculateCarbs()" step="0.01">
-                <input type="number" id="fiber" class="form-control mb-2" placeholder="食物纖維（g） / 食物繊維（g)" inputmode="decimal" oninput="calculateCarbs()" step="0.01">
+                <input type="number" id="calories" class="form-control mb-2" placeholder="卡路里 / カロリー" inputmode="decimal" step="0.01">
+                <input type="number" id="protein" class="form-control mb-2" placeholder="蛋白質（g） / タンパク質（g)" inputmode="decimal" step="0.01">
+                <input type="number" id="fat" class="form-control mb-2" placeholder="脂質（g） / 脂質（g)" inputmode="decimal" step="0.01">
+                <input type="number" id="fiber" class="form-control mb-2" placeholder="食物纖維（g） / 食物繊維（g)" inputmode="decimal" step="0.01">
                 <p id="carbOutput" class="result"></p>
             </div>
         </div>
@@ -63,26 +87,98 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
- <script>
-    function convertBloodSugar() {
-        var mmolInput = parseFloat(document.getElementById("mmolInput").value);
-        if (!isNaN(mmolInput)) {
-            var mgdlOutput = document.getElementById("mgdlOutput");
-            var mgdlValue = (mmolInput * 18.0182).toFixed(2); // 四捨五入至小數點第二位
-            mgdlOutput.textContent = "結果 " + mgdlValue + " mg/dL";
+    <script>
+        // 初始化頁面載入時讀取歷史記錄
+        window.onload = function() {
+            loadHistory();
+        };
+
+        function convertBloodSugar() {
+            var mmolInput = parseFloat(document.getElementById("mmolInput").value);
+            if (!isNaN(mmolInput)) {
+                var mgdlOutput = document.getElementById("mgdlOutput");
+                var mgdlValue = (mmolInput * 18.0182).toFixed(2); // 四捨五入至小數點第二位
+                mgdlOutput.textContent = "結果 " + mgdlValue + " mg/dL";
+            }
         }
-    }
 
-    function calculateCarbs() {
-        var calories = parseFloat(document.getElementById("calories").value) || 0;
-        var protein = parseFloat(document.getElementById("protein").value) || 0;
-        var fat = parseFloat(document.getElementById("fat").value) || 0;
-        var fiber = parseFloat(document.getElementById("fiber").value) || 0;
+        function clearBloodSugar() {
+            document.getElementById("mmolInput").value = "";
+            document.getElementById("mgdlOutput").textContent = "";
 
-        var carbOutput = document.getElementById("carbOutput");
-        var carbValue = (((calories - (protein * 4) - (fat * 9)) / 4) - fiber).toFixed(2); // 四捨五入至小數點第二位
-        carbOutput.textContent = "結果 : 糖質 " + carbValue + "g ";
-    }
-</script>
+            // 清除血糖換算歷史表格
+            clearHistory();
+        }
+
+        function saveToCookie() {
+            var mmolInput = parseFloat(document.getElementById("mmolInput").value);
+            if (!isNaN(mmolInput)) {
+                var mgdlValue = (mmolInput * 18.0182).toFixed(2); // 四捨五入至小數點第二位
+
+                // 將血糖換算結果新增到歷史記錄
+                addToHistory(new Date().toLocaleString(), mmolInput, mgdlValue);
+            }
+        }
+
+        function addToHistory(dateTime, mmol, mgdl) {
+            var historyBody = document.getElementById("historyBody");
+
+            // 新增一行到歷史記錄表格
+            var row = historyBody.insertRow(0);
+            var cell1 = row.insertCell(0);
+            var cell2 = row.insertCell(1);
+            var cell3 = row.insertCell(2);
+            cell1.textContent = dateTime;
+            cell2.textContent = mmol.toFixed(2); // 四捨五入至小數點第二位
+            cell3.textContent = mgdl;
+
+            // 保留五筆歷史記錄
+            if (historyBody.rows.length > 5) {
+                historyBody.deleteRow(-1);
+            }
+
+            // 保存歷史記錄到 Cookie，有效期一星期
+            document.cookie = "history=" + JSON.stringify(getHistoryArray()) + "; max-age=" + (60 * 60 * 24 * 7);
+        }
+
+        function clearHistory() {
+            var historyBody = document.getElementById("historyBody");
+            while (historyBody.rows.length > 0) {
+                historyBody.deleteRow(0);
+            }
+        }
+
+        function loadHistory() {
+            var historyCookie = getCookie("history");
+            if (historyCookie) {
+                var historyArray = JSON.parse(historyCookie);
+                var historyBody = document.getElementById("historyBody");
+
+                historyArray.forEach(function(entry) {
+                    addToHistory(entry.dateTime, entry.mmol, entry.mgdl);
+                });
+            }
+        }
+
+        function getHistoryArray() {
+            var historyArray = [];
+            var historyBody = document.getElementById("historyBody");
+
+            for (var i = 0; i < historyBody.rows.length; i++) {
+                var dateTime = historyBody.rows[i].cells[0].textContent;
+                var mmol = parseFloat(historyBody.rows[i].cells[1].textContent);
+                var mgdl = parseFloat(historyBody.rows[i].cells[2].textContent);
+
+                historyArray.push({ dateTime: dateTime, mmol: mmol, mgdl: mgdl });
+            }
+
+            return historyArray;
+        }
+
+        function getCookie(name) {
+            var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+            if (match) return match[2];
+        }
+    </script>
 </body>
 </html>
