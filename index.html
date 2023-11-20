@@ -5,7 +5,7 @@
     <title>計算</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- 引入 Bootstrap CSS -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.0.1/css/bootstrap.min.css" integrity="sha512-Ez0cGzNzHR1tYAv56860NLspgUGuQw16GiOOp/I2LuTmpSK9xDXlgJz3XN4cnpXWDmkNBKXR/VDMTCnAaEooxA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -51,13 +51,13 @@
                 <h2>血糖換算</h2>
                 <input type="number" id="mmolInput" class="form-control mb-2" placeholder="mmol/L" inputmode="decimal" step="0.01" oninput="convertBloodSugar()">
                 <p id="mgdlOutput" class="result"></p>
-                <button class="btn btn-secondary" onclick="clearBloodSugar()">清除</button>
-                <button class="btn btn-secondary" onclick="saveToCookie()">保存</button>
+                <button class="btn btn-outline-primary btn-lg" onclick="saveToCookie()">履歴保存</button>
                 
+				<hr class="mt-5 mb-5">
                 <!-- 歷史記錄表格移到這裡 -->
                 <div id="bloodSugarHistory">
-                    <h2>血糖換算歷史記錄</h2>
-                    <table class="table">
+                    <h2>履歴</h2>
+                    <table class="table table-striped table-hover">
                         <thead>
                             <tr>
                                 <th scope="col">日期時間</th>
@@ -69,6 +69,7 @@
                             <!-- 歷史記錄內容會動態插入這裡 -->
                         </tbody>
                     </table>
+                <button class="btn btn-outline-danger btn-lg d-none" onclick="clearBloodSugar()">履歴削除</button>
                 </div>
             </div>
 
@@ -84,8 +85,8 @@
     </div>
 
     <!-- 引入 Bootstrap 和 jQuery JavaScript -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.0.1/js/bootstrap.min.js" integrity="sha512-EKWWs1ZcA2ZY9lbLISPz8aGR2+L7JVYqBAYTq5AXgBkSjRSuQEGqWx8R1zAX16KdXPaCjOCaKE8MCpU0wcHlHA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <script>
         // 初始化頁面載入時讀取歷史記錄
@@ -132,13 +133,13 @@
             cell2.textContent = mmol.toFixed(2); // 四捨五入至小數點第二位
             cell3.textContent = mgdl;
 
-            // 保留五筆歷史記錄
-            if (historyBody.rows.length > 5) {
+            // 保留100筆歷史記錄
+            if (historyBody.rows.length > 100) {
                 historyBody.deleteRow(-1);
             }
 
-            // 保存歷史記錄到 Cookie，有效期一星期
-            document.cookie = "history=" + JSON.stringify(getHistoryArray()) + "; max-age=" + (60 * 60 * 24 * 7);
+            // 保存歷史記錄到 Cookie，有效期一年
+            document.cookie = "history=" + JSON.stringify(getHistoryArray()) + "; max-age=" + (60 * 60 * 24 * 7 * 365);
         }
 
         function clearHistory() {
