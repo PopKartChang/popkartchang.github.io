@@ -24,16 +24,6 @@
         #bloodSugarHistory {
             margin-top: 20px;
         }
-
-        /* 新增的樣式 */
-        .table-danger {
-            background-color: #f8d7da !important;
-        }
-
-        /* 新增的樣式 */
-        .table-warning {
-            background-color: #fff3cd !important;
-        }
     </style>
 	 <!-- 引入 Bootstrap 和 jQuery JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -151,6 +141,8 @@
                 row.classList.add("table-danger");
             } else if (mgdl > 120) {
                 row.classList.add("table-warning");
+            }  else if (mgdl < 70) {
+                row.classList.add("table-info");
             }
 
             // 保留100筆歷史記錄
@@ -202,53 +194,38 @@
         }
 		
 		
-		 function exportToExcel() {
-        var historyTable = document.getElementById("historyBody");
+		function exportToExcel() {
+    var historyTable = document.getElementById("historyBody");
 
-        // 建立一個二維陣列，存儲表格數據
-        var data = [];
+    // 建立一個二維陣列，存儲表格數據
+    var data = [];
 
-        // 添加表頭
-        var headers = [];
-        for (var i = 0; i < historyTable.rows[0].cells.length; i++) {
-            headers[i] = historyTable.rows[0].cells[i].textContent;
-        }
-        data.push(headers);
-
-        // 添加表格數據
-        for (var i = 1; i < historyTable.rows.length; i++) {
-            var row = [];
-            for (var j = 0; j < historyTable.rows[i].cells.length; j++) {
-                row[j] = historyTable.rows[i].cells[j].textContent;
-            }
-            data.push(row);
-        }
-
-        // 創建一個工作簿對象
-        var ws = XLSX.utils.aoa_to_sheet(data);
-
-        // 創建一個工作簿對象，並將工作表添加到其中
-        var wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-
-        // 將工作簿轉換為二進制數據
-        var blob = XLSX.write(wb, { bookType: "xlsx", bookSST: false, type: "blob" });
-
-        // 創建 URL
-        var url = URL.createObjectURL(blob);
-
-        // 創建 a 元素
-        var a = document.createElement("a");
-        a.href = url;
-        a.download = "history.xlsx"; // 下載檔案名稱
-
-        // 模擬點擊 a 元素
-        document.body.appendChild(a);
-        a.click();
-
-        // 移除 a 元素
-        document.body.removeChild(a);
+    // 添加表頭
+    var headers = [];
+    for (var i = 0; i < historyTable.rows[0].cells.length; i++) {
+        headers[i] = historyTable.rows[0].cells[i].textContent;
     }
+    data.push(headers);
+
+    // 添加表格數據
+    for (var i = 1; i < historyTable.rows.length; i++) {
+        var row = [];
+        for (var j = 0; j < historyTable.rows[i].cells.length; j++) {
+            row[j] = historyTable.rows[i].cells[j].textContent;
+        }
+        data.push(row);
+    }
+
+    // 創建一個工作簿對象
+    var ws = XLSX.utils.aoa_to_sheet(data);
+
+    // 創建一個工作簿對象，並將工作表添加到其中
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+    // 直接下載 Excel 檔案
+    XLSX.writeFile(wb, "BloodSugar.xlsx");
+}
     </script>
 </body>
 </html>
