@@ -61,7 +61,7 @@
                 <h2>血糖換算</h2>
                 <input type="number" id="mmolInput" class="form-control mb-2" placeholder="mmol/L" inputmode="decimal" step="0.01" oninput="convertBloodSugar()">
                 <p id="mgdlOutput" class="result"></p>
-                <button class="btn btn-outline-primary btn-lg" onclick="saveToCookie()">履歴保存</button>
+                <button class="btn btn-outline-primary btn-lg" onclick="saveToCookie()">保存</button>
                 
                 <hr class="mt-5 mb-5">
                 <!-- 歷史記錄表格移到這裡 -->
@@ -70,7 +70,7 @@
                     <table class="table table-striped table-hover">
                         <thead>
                             <tr>
-                                <th scope="col">日期時間</th>
+                                <th scope="col">日期時間 / 日付時間</th>
                                 <th scope="col">mmol/L</th>
                                 <th scope="col">mg/dL</th>
                             </tr>
@@ -80,6 +80,7 @@
                         </tbody>
                     </table>
                     <button class="btn btn-outline-danger btn-lg d-none" onclick="clearBloodSugar()">履歴削除</button>
+					<button class="btn btn-success btn-lg" onclick="exportToExcel()">資料下載 /　データダウンロード</button>
                 </div>
             </div>
 
@@ -97,7 +98,7 @@
     <!-- 引入 Bootstrap 和 jQuery JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.0.1/js/bootstrap.min.js" integrity="sha512-EKWWs1ZcA2ZY9lbLISPz8aGR2+L7JVYqBAYTq5AXgBkSjRSuQEGqWx8R1zAX16KdXPaCjOCaKE8MCpU0wcHlHA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
         // 初始化頁面載入時讀取歷史記錄
         window.onload = function() {
@@ -197,6 +198,55 @@
             var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
             if (match) return match[2];
         }
+		
+		
+		 function exportToExcel() {
+        var historyTable = document.getElementById("historyBody");
+
+        // 建立一個二維陣列，存儲表格數據
+        var data = [];
+
+        // 添加表頭
+        var headers = [];
+        for (var i = 0; i < historyTable.rows[0].cells.length; i++) {
+            headers[i] = historyTable.rows[0].cells[i].textContent;
+        }
+        data.push(headers);
+
+        // 添加表格數據
+        for (var i = 1; i < historyTable.rows.length; i++) {
+            var row = [];
+            for (var j = 0; j < historyTable.rows[i].cells.length; j++) {
+                row[j] = historyTable.rows[i].cells[j].textContent;
+            }
+            data.push(row);
+        }
+
+        // 創建一個工作簿對象
+        var ws = XLSX.utils.aoa_to_sheet(data);
+
+        // 創建一個工作簿對象，並將工作表添加到其中
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+        // 將工作簿轉換為二進制數據
+        var blob = XLSX.write(wb, { bookType: "xlsx", bookSST: false, type: "blob" });
+
+        // 創建 URL
+        var url = URL.createObjectURL(blob);
+
+        // 創建 a 元素
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "history.xlsx"; // 下載檔案名稱
+
+        // 模擬點擊 a 元素
+        document.body.appendChild(a);
+        a.click();
+
+        // 移除 a 元素
+        document.body.removeChild(a);
+    }
     </script>
 </body>
 </html>
