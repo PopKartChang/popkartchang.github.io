@@ -24,6 +24,16 @@
         #bloodSugarHistory {
             margin-top: 20px;
         }
+
+        /* 新增的樣式 */
+        .table-danger {
+            background-color: #f8d7da !important;
+        }
+
+        /* 新增的樣式 */
+        .table-warning {
+            background-color: #fff3cd !important;
+        }
     </style>
 </head>
 <!-- Google tag (gtag.js) -->
@@ -53,7 +63,7 @@
                 <p id="mgdlOutput" class="result"></p>
                 <button class="btn btn-outline-primary btn-lg" onclick="saveToCookie()">履歴保存</button>
                 
-				<hr class="mt-5 mb-5">
+                <hr class="mt-5 mb-5">
                 <!-- 歷史記錄表格移到這裡 -->
                 <div id="bloodSugarHistory">
                     <h2>履歴</h2>
@@ -69,7 +79,7 @@
                             <!-- 歷史記錄內容會動態插入這裡 -->
                         </tbody>
                     </table>
-                <button class="btn btn-outline-danger btn-lg d-none" onclick="clearBloodSugar()">履歴削除</button>
+                    <button class="btn btn-outline-danger btn-lg d-none" onclick="clearBloodSugar()">履歴削除</button>
                 </div>
             </div>
 
@@ -132,6 +142,13 @@
             cell1.textContent = dateTime;
             cell2.textContent = mmol.toFixed(2); // 四捨五入至小數點第二位
             cell3.textContent = mgdl;
+
+            // 判斷是否需要添加CSS標記
+            if (mgdl > 140) {
+                row.classList.add("table-danger");
+            } else if (mgdl > 120) {
+                row.classList.add("table-warning");
+            }
 
             // 保留100筆歷史記錄
             if (historyBody.rows.length > 100) {
