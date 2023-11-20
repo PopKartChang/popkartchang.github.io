@@ -86,11 +86,11 @@
             </div>
 
             <div id="foodCarb" class="tab-pane fade text-center">
-                <h2>糖質計算</h2>
-                <input type="number" id="calories" class="form-control mb-2" placeholder="卡路里 / カロリー" inputmode="decimal" step="0.01">
-                <input type="number" id="protein" class="form-control mb-2" placeholder="蛋白質（g） / タンパク質（g)" inputmode="decimal" step="0.01">
-                <input type="number" id="fat" class="form-control mb-2" placeholder="脂質（g） / 脂質（g)" inputmode="decimal" step="0.01">
-                <input type="number" id="fiber" class="form-control mb-2" placeholder="食物纖維（g） / 食物繊維（g)" inputmode="decimal" step="0.01">
+                 <h2>糖質計算</h2>
+                <input type="number" id="calories" class="form-control mb-2" placeholder="卡路里 / カロリー" inputmode="decimal" oninput="calculateCarbs()" step="0.01">
+                <input type="number" id="protein" class="form-control mb-2" placeholder="蛋白質（g） / タンパク質（g)" inputmode="decimal" oninput="calculateCarbs()" step="0.01">
+                <input type="number" id="fat" class="form-control mb-2" placeholder="脂質（g） / 脂質（g)" inputmode="decimal" oninput="calculateCarbs()" step="0.01">
+                <input type="number" id="fiber" class="form-control mb-2" placeholder="食物纖維（g） / 食物繊維（g)" inputmode="decimal" oninput="calculateCarbs()" step="0.01">
                 <p id="carbOutput" class="result"></p>
             </div>
         </div>
@@ -226,6 +226,17 @@
     // 直接下載 Excel 檔案
     XLSX.writeFile(wb, "BloodSugar.xlsx");
 }
+
+ function calculateCarbs() {
+            var calories = parseFloat(document.getElementById("calories").value) || 0;
+            var protein = parseFloat(document.getElementById("protein").value) || 0;
+            var fat = parseFloat(document.getElementById("fat").value) || 0;
+            var fiber = parseFloat(document.getElementById("fiber").value) || 0;
+
+            var carbOutput = document.getElementById("carbOutput");
+            var carbValue = ((calories - (protein * 4) - (fat * 9)) / 4) - fiber;
+            carbOutput.textContent = "結果 : 糖質 " + carbValue + "g ";
+        }
     </script>
 </body>
 </html>
