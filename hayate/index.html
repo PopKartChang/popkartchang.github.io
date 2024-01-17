@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>哈雅貼等燈燈燈倒數計時</title>
+  <style>
+    @import url(https://fonts.googleapis.com/css2?family=Hachi+Maru+Pop&display=swap);
+
+   body {
+  text-align: center;
+  font-family: 'Hachi Maru Pop', cursive;
+  color: #fff;
+  background: url('./images/bg.jpg') no-repeat center center fixed;
+  background-size: cover;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7); /* 設定遮罩的顏色和透明度 */
+}
+
+#countdown-container {
+  text-align: center;
+  margin-top: 5%;
+  position: relative; /* 確保計時器在遮罩之上 */
+  z-index: 1; /* 將計時器置於遮罩之上 */
+}
+
+    #countdown-text {
+      font-size: 1.5em;
+      color: #fff;
+    }
+
+    #timer {
+      display: inline-block;
+    }
+
+    #days { font-size: 160px; color: #db4844 }
+    #hours { font-size: 130px; color: #f07c22 }
+    #minutes { font-size: 80px; color: #f6da74 }
+    #seconds { font-size: 50px; color: #abcd58 }
+
+    div { display: inline-block; line-height: 1; padding: 20px; font-size: 40px }
+    span { display: block; font-size: 20px; color: #fff }
+
+    @media only screen and (max-width: 768px) {
+      /* Adjust styles for smaller screens here */
+      #days { font-size: 120px; }
+      #hours { font-size: 90px; }
+      #minutes { font-size: 60px; }
+      #seconds { font-size: 30px; }
+      #countdown-text { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="countdown-container">
+    <div id="countdown-text">哈雅貼<br>等燈燈燈倒數</div>
+    <div id="timer">
+      <div id="days"></div>
+      <div id="hours"></div>
+      <div id="minutes"></div>
+      <div id="seconds"></div>
+    </div>
+  </div>
+  <script>
+    function makeTimer() {
+      const targetDate = new Date("2024-03-08T08:00:00+08:00");
+      const currentDate = new Date();
+      const timeDiffInSeconds = Math.floor((targetDate - currentDate) / 1000);
+      const days = Math.floor(timeDiffInSeconds / 86400);
+      const hours = Math.floor((timeDiffInSeconds - 86400 * days) / 3600);
+      const minutes = Math.floor((timeDiffInSeconds - 86400 * days - 3600 * hours) / 60);
+      const seconds = Math.floor(timeDiffInSeconds - 86400 * days - 3600 * hours - 60 * minutes);
+
+      const formatNumber = (num) => (num < 10 ? "0" + num : num);
+
+      document.getElementById("days").innerHTML = days + "<span>日</span>";
+      document.getElementById("hours").innerHTML = formatNumber(hours) + "<span>小時</span>";
+      document.getElementById("minutes").innerHTML = formatNumber(minutes) + "<span>分</span>";
+      document.getElementById("seconds").innerHTML = formatNumber(seconds) + "<span>秒</span>";
+    }
+
+    setInterval(function () {
+      makeTimer();
+    }, 1000);
+  </script>
+</body>
+</html>
