@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>販売価格計算</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+  }
+  .container {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  label {
+    display: block;
+    margin-bottom: 5px;
+  }
+  input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+  }
+  button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  button:hover {
+    background-color: #0056b3;
+  }
+  #result {
+    margin-top: 20px;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>販売価格計算</h2>
+  <label for="wholesalePrice">問屋の卸価格（税抜き）：</label>
+  <input type="number" id="wholesalePrice" step="0.01">
+  <label for="desiredProfitMargin">希望利益率（％）：</label>
+  <input type="number" id="desiredProfitMargin" step="0.01">
+  <button onclick="calculatePrice()">価格を計算する</button>
+  <div id="result"></div>
+</div>
+
+<script>
+function roundUpTo50(value) {
+  return Math.ceil(value / 50) * 50;
+}
+
+function calculatePrice() {
+  var wholesalePrice = parseFloat(document.getElementById('wholesalePrice').value);
+  var desiredProfitMargin = parseFloat(document.getElementById('desiredProfitMargin').value);
+
+  if (isNaN(wholesalePrice)) {
+    alert('正しい問屋の卸価格を入力してください。');
+    return;
+  }
+
+  if (isNaN(desiredProfitMargin) || desiredProfitMargin <= 0) {
+    alert('正しい希望利益率を入力してください。');
+    return;
+  }
+
+  var tax = 1.1;
+  var securityServiceFeeRate = 0.001; // セキュリティーサービス料率
+  var salesCommissionRate = 0.033; // 販売手数料率
+  var settlementFeeRate = 0.032; // 決済手数料率
+  var otherFeeRate = 0.034; // その他手数料率
+
+  // 販売価格の目安から計算した手数料
+  var totalCommissionRate = securityServiceFeeRate + salesCommissionRate + settlementFeeRate + otherFeeRate; // 手数料率合計
+  var commissionRate = totalCommissionRate * 1.1; // 消費税を含める
+  var targetCommission = wholesalePrice * commissionRate; // 手数料
+  var targetPrice = wholesalePrice + targetCommission;
+
+  var recommendedPrice = Math.round((targetPrice * tax) * (1 + (desiredProfitMargin / 100)));
+
+  // 販売価格を50円単位で切り上げる
+  recommendedPrice = roundUpTo50(recommendedPrice);
+
+  // 粗利計算
+  var grossProfit = recommendedPrice - wholesalePrice;
+
+  // それぞれの手数料を販売価格の目安から計算
+  var securityServiceFee = Math.round(recommendedPrice * securityServiceFeeRate);
+  var salesCommission = Math.round(recommendedPrice * salesCommissionRate);
+  var settlementFee = Math.round(recommendedPrice * settlementFeeRate);
+  var otherFee = Math.round(recommendedPrice * otherFeeRate);
+
+  var result = document.getElementById('result');
+  result.innerHTML = 'おすすめ販売価格: ¥' + recommendedPrice;
+  result.innerHTML += '<br>';
+  result.innerHTML += '予想利益(-諸手数料): ¥' + grossProfit;
+  result.innerHTML += '<br>';
+  result.innerHTML += 'セキュリティーサービス料: ¥' + securityServiceFee;
+  result.innerHTML += '<br>';
+  result.innerHTML += '販売手数料: ¥' + salesCommission;
+  result.innerHTML += '<br>';
+  result.innerHTML += '決済手数料: ¥' + settlementFee;
+  result.innerHTML += '<br>';
+  result.innerHTML += 'その他手数料(出店コストなど): ¥' + otherFee;
+}
+</script>
+</body>
+</html>
