@@ -98,10 +98,13 @@ function calculatePrice() {
   var settlementFee = Math.round(recommendedPrice * settlementFeeRate);
   var otherFee = Math.round(recommendedPrice * otherFeeRate);
 
+  // 予想利益を計算
+  var expectedProfit = grossProfit - (securityServiceFee + salesCommission + settlementFee + otherFee);
+
   var result = document.getElementById('result');
   result.innerHTML = 'おすすめ販売価格: ¥' + recommendedPrice;
   result.innerHTML += '<br>';
-  result.innerHTML += '予想利益(-諸手数料): ¥' + grossProfit;
+  result.innerHTML += '予想利益(-諸手数料): ¥' + expectedProfit;
   result.innerHTML += '<br>';
   result.innerHTML += 'セキュリティーサービス料: ¥' + securityServiceFee;
   result.innerHTML += '<br>';
