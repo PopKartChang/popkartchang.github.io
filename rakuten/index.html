@@ -19,11 +19,14 @@
     display: block;
     margin-bottom: 5px;
   }
-  input {
+  input[type="number"] {
     width: 100%;
     padding: 8px;
     margin-bottom: 10px;
     box-sizing: border-box;
+  }
+  input[type="checkbox"] {
+    margin-right: 10px;
   }
   button {
     padding: 10px 20px;
@@ -49,6 +52,14 @@
   <input type="number" id="wholesalePrice" step="0.01">
   <label for="desiredProfitMargin">希望利益率（％）：</label>
   <input type="number" id="desiredProfitMargin" step="0.01">
+  <label>
+    <input type="checkbox" id="includePackagingFee">
+    包装材料費：¥<input type="number" id="packagingFee" value="300" step="0.01">
+  </label>
+  <label>
+    <input type="checkbox" id="includeLaborCost">
+    工賃：¥<input type="number" id="laborCost" value="4000" step="0.01">
+  </label>
   <button onclick="calculatePrice()">価格を計算する</button>
   <div id="result"></div>
 </div>
@@ -61,8 +72,12 @@ function roundUpTo50(value) {
 function calculatePrice() {
   var wholesalePrice = parseFloat(document.getElementById('wholesalePrice').value);
   var desiredProfitMargin = parseFloat(document.getElementById('desiredProfitMargin').value);
+  var includePackagingFee = document.getElementById('includePackagingFee').checked;
+  var packagingFee = includePackagingFee ? parseFloat(document.getElementById('packagingFee').value) : 0;
+  var includeLaborCost = document.getElementById('includeLaborCost').checked;
+  var laborCost = includeLaborCost ? parseFloat(document.getElementById('laborCost').value) : 0;
 
-  if (isNaN(wholesalePrice)) {
+  if (isNaN(wholesalePrice) || wholesalePrice <= 0) {
     alert('正しい問屋の卸価格を入力してください。');
     return;
   }
@@ -82,7 +97,7 @@ function calculatePrice() {
   var totalCommissionRate = securityServiceFeeRate + salesCommissionRate + settlementFeeRate + otherFeeRate; // 手数料率合計
   var commissionRate = totalCommissionRate * 1.1; // 消費税を含める
   var targetCommission = wholesalePrice * commissionRate; // 手数料
-  var targetPrice = wholesalePrice + targetCommission;
+  var targetPrice = wholesalePrice + targetCommission + packagingFee + laborCost;
 
   var recommendedPrice = Math.round((targetPrice * tax) * (1 + (desiredProfitMargin / 100)));
 
@@ -90,7 +105,7 @@ function calculatePrice() {
   recommendedPrice = roundUpTo50(recommendedPrice);
 
   // 粗利計算
-  var grossProfit = recommendedPrice - wholesalePrice;
+  var grossProfit = recommendedPrice - (wholesalePrice + packagingFee + laborCost);
 
   // それぞれの手数料を販売価格の目安から計算
   var securityServiceFee = Math.round(recommendedPrice * securityServiceFeeRate);
