@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>吉伊卡哇大逃亡：手機版</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* 禁止捲動 */
+            background-color: #2ecc71;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none; /* 關鍵：禁止瀏覽器預設觸控行為 */
+            user-select: none; /* 禁止選取文字 */
+            -webkit-user-select: none;
+        }
+        canvas {
+            display: block;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .score-box {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 15px;
+            border-radius: 15px;
+            border: 2px solid #fff;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            color: #333;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        #game-over-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            z-index: 10;
+        }
+        .panel {
+            background: white;
+            padding: 30px;
+            border-radius: 25px;
+            text-align: center;
+            width: 80%;
+            max-width: 400px;
+            border: 6px solid #ffb7c5;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        h1 { margin: 0 0 15px 0; color: #ff6b81; font-size: 24px; }
+        p { font-size: 18px; color: #555; margin-bottom: 25px; }
+        .btn {
+            background: #ff6b81;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 5px 0 #d63031;
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: translateY(5px); box-shadow: none; }
+        
+        /* 手機提示 */
+        .mobile-hint {
+            position: absolute;
+            bottom: 50px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div class="hud-top">
+            <div class="score-box">
+                <div id="score">分數: 0</div>
+                <div id="level" style="font-size:14px; color:#666;">Lv.1</div>
+            </div>
+            <div class="score-box" style="background: rgba(255,230,100,0.8);">
+                🏆 <span id="highscore">0</span>
+            </div>
+        </div>
+        <div class="mobile-hint" id="hint-text">
+            電腦：WASD移動<br>手機：任意處滑動搖桿
+        </div>
+    </div>
+
+    <div id="game-over-screen">
+        <div class="panel">
+            <h1>🗿 已石化</h1>
+            <p>吉伊卡哇變成石頭了...</p>
+            <p style="font-size: 24px; font-weight: bold; color: #333;">得分: <span id="final-score">0</span></p>
+            <button class="btn" onclick="startGame()">再逃一次!</button>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // 遊戲全域變數
+    let gameRunning = false;
+    let score = 0;
+    let level = 1;
+    let frameCount = 0;
+    let highScore = localStorage.getItem('chiikawa_run_best') || 0;
+    document.getElementById('highscore').innerText = highScore;
+
+    // 視窗調整
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // ============================
+    // 輸入控制 (鍵盤 + 虛擬搖桿)
+    // ============================
+    const input = { x: 0, y: 0 }; // 正規化的移動向量 (-1 到 1)
+    
+    // 鍵盤狀態
+    const keys = { w: false, a: false, s: false, d: false };
+    
+    window.addEventListener('keydown', (e) => {
+        const key = e.key.toLowerCase();
+        if ('wasd'.includes(key) || e.key.startsWith('Arrow')) {
+            if (key === 'w' || e.key === 'ArrowUp') keys.w = true;
+            if (key === 'a' || e.key === 'ArrowLeft') keys.a = true;
+            if (key === 's' || e.key === 'ArrowDown') keys.s = true;
+            if (key === 'd' || e.key === 'ArrowRight') keys.d = true;
+            updateKeyboardInput();
+        }
+    });
+
+    window.addEventListener('keyup', (e) => {
+        const key = e.key.toLowerCase();
+        if ('wasd'.includes(key) || e.key.startsWith('Arrow')) {
+            if (key === 'w' || e.key === 'ArrowUp') keys.w = false;
+            if (key === 'a' || e.key === 'ArrowLeft') keys.a = false;
+            if (key === 's' || e.key === 'ArrowDown') keys.s = false;
+            if (key === 'd' || e.key === 'ArrowRight') keys.d = false;
+            updateKeyboardInput();
+        }
+    });
+
+    function updateKeyboardInput() {
+        // 如果沒有觸控，才用鍵盤值
+        if (!joystick.active) {
+            input.x = (keys.d ? 1 : 0) - (keys.a ? 1 : 0);
+            input.y = (keys.s ? 1 : 0) - (keys.w ? 1 : 0);
+            // 正規化避免斜向加速
+            const mag = Math.hypot(input.x, input.y);
+            if (mag > 1) {
+                input.x /= mag;
+                input.y /= mag;
+            }
+        }
+    }
+
+    // 虛擬搖桿邏輯
+    const joystick = {
+        active: false,
+        originX: 0,
+        originY: 0,
+        currentX: 0,
+        currentY: 0,
+        radius: 50 // 搖桿半徑
+    };
+
+    // 觸控事件
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        joystick.active = true;
+        joystick.originX = touch.clientX;
+        joystick.originY = touch.clientY;
+        joystick.currentX = touch.clientX;
+        joystick.currentY = touch.clientY;
+        document.getElementById('hint-text').style.display = 'none'; // 隱藏提示
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!joystick.active) return;
+        const touch = e.touches[0];
+        joystick.currentX = touch.clientX;
+        joystick.currentY = touch.clientY;
+
+        // 計算向量
+        let dx = joystick.currentX - joystick.originX;
+        let dy = joystick.currentY - joystick.originY;
+        const dist = Math.hypot(dx, dy);
+
+        // 限制搖桿圓球在半徑內
+        if (dist > joystick.radius) {
+            const ratio = joystick.radius / dist;
+            dx *= ratio;
+            dy *= ratio;
+            joystick.currentX = joystick.originX + dx;
+            joystick.currentY = joystick.originY + dy;
+        }
+
+        // 更新全域輸入向量 (除以半徑得到 0~1 的值)
+        input.x = dx / joystick.radius;
+        input.y = dy / joystick.radius;
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        joystick.active = false;
+        input.x = 0;
+        input.y = 0;
+    });
+
+    // ============================
+    // 遊戲物件
+    // ============================
+
+    class Player {
+        constructor() {
+            this.x = canvas.width / 2;
+            this.y = canvas.height / 2;
+            this.radius = 25;
+            this.maxSpeed = 6;
+            this.isStone = false;
+            this.angle = 0; // 傾斜動畫用
+            this.bobble = 0; // 上下跳動
+        }
+
+        update() {
+            if (this.isStone) return;
+
+            // 移動
+            this.x += input.x * this.maxSpeed;
+            this.y += input.y * this.maxSpeed;
+
+            // 邊界限制
+            this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
+            this.y = Math.max(this.radius, Math.min(canvas.height - this.radius, this.y));
+
+            // 動畫計算
+            const isMoving = Math.abs(input.x) > 0.1 || Math.abs(input.y) > 0.1;
+            if (isMoving) {
+                this.bobble = Math.sin(frameCount * 0.5) * 3;
+                // 根據移動方向左右傾斜
+                this.angle = input.x * 0.2;
+            } else {
+                this.bobble = 0;
+                this.angle = 0;
+            }
+        }
+
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y + this.bobble);
+            ctx.rotate(this.angle);
+
+            if (this.isStone) {
+                ctx.filter = 'grayscale(100%) contrast(1.2)';
+            }
+
+            // 身體
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 25, 22, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#333';
+            ctx.stroke();
+
+            // 耳朵
+            ctx.beginPath();
+            ctx.arc(-18, -15, 8, 0, Math.PI * 2); // 左
+            ctx.arc(18, -15, 8, 0, Math.PI * 2);  // 右
+            ctx.fill();
+            ctx.stroke();
+
+            // 臉部
+            ctx.fillStyle = '#333';
+            if (this.isStone) {
+                // 石化表情
+                ctx.font = "bold 20px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText("x  x", 0, 5);
+            } else {
+                // 眼睛
+                ctx.beginPath();
+                ctx.arc(-8, -2, 2.5, 0, Math.PI * 2);
+                ctx.arc(8, -2, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 腮紅
+                ctx.fillStyle = '#ffb7c5';
+                ctx.beginPath();
+                ctx.arc(-14, 5, 5, 0, Math.PI * 2);
+                ctx.arc(14, 5, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 嘴巴
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(0, 2, 3, 0.2, Math.PI - 0.2);
+                ctx.stroke();
+
+                // 淚奔特效 (如果移動速度夠快)
+                if (Math.abs(input.x) > 0.5 || Math.abs(input.y) > 0.5) {
+                    ctx.fillStyle = '#a4b0be'; // 淚水色
+                    ctx.beginPath();
+                    ctx.arc(-20, 0 + Math.random()*5, 3, 0, Math.PI*2);
+                    ctx.arc(20, 0 + Math.random()*5, 3, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+        }
+    }
+
+    class Snake {
+        constructor() {
+            this.x = Math.random() * canvas.width;
+            this.y = -50; // 從上面飛下來
+            this.angle = 0;
+            this.targetX = 0;
+            this.targetY = 0;
+        }
+
+        update(player) {
+            // 蛇會嘗試保持在玩家上方的一定距離，像是在觀察
+            const hoverDist = 150;
+            this.targetX = player.x + Math.sin(frameCount * 0.02) * 100; // 左右徘徊
+            this.targetY = player.y - hoverDist;
+
+            // 平滑移動 (Lerp)
+            this.x += (this.targetX - this.x) * 0.05;
+            this.y += (this.targetY - this.y) * 0.05;
+
+            // 讓蛇頭朝向玩家
+            this.angle = Math.atan2(player.y - this.y, player.x - this.x);
+        }
+
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            
+            // 身體光暈
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+            
+            // 畫蛇頭
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 35, 25, 0, 0, Math.PI*2);
+            ctx.fill();
+            ctx.shadowBlur = 0; // 關閉光暈畫線條
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#ddd';
+            ctx.stroke();
+
+            // 紅眼 (兇)
+            ctx.fillStyle = '#e74c3c';
+            ctx.beginPath();
+            ctx.arc(-12, 5, 4, 0, Math.PI*2); // 左眼
+            ctx.arc(12, 5, 4, 0, Math.PI*2);  // 右眼
+            ctx.fill();
+
+            // 畫蛇身 (簡單的尾巴擺動)
+            ctx.beginPath();
+            ctx.moveTo(0, -25);
+            ctx.quadraticCurveTo(
+                Math.sin(frameCount * 0.2) * 20, -50, 
+                Math.sin(frameCount * 0.2) * 10, -70
+            );
+            ctx.lineWidth = 15;
+            ctx.strokeStyle = '#fff';
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            ctx.restore();
+        }
+    }
+
+    class Bullet {
+        constructor(x, y, targetX, targetY) {
+            this.x = x;
+            this.y = y;
+            this.radius = 10;
+            // 難度越高，子彈越快
+            const speedBase = 4 + (level * 0.5);
+            const angle = Math.atan2(targetY - y, targetX - x);
+            this.dx = Math.cos(angle) * speedBase;
+            this.dy = Math.sin(angle) * speedBase;
+            this.life = 0;
+        }
+
+        update() {
+            this.x += this.dx;
+            this.y += this.dy;
+            this.life++;
+        }
+
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            
+            // 紫色光波特效
+            const pulse = Math.sin(frameCount * 0.5) * 5;
+            ctx.shadowBlur = 10 + pulse;
+            ctx.shadowColor = '#8e44ad';
+            
+            ctx.fillStyle = '#9b59b6';
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius, 0, Math.PI*2);
+            ctx.fill();
+            
+            // 核心亮點
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(-2, -2, 3, 0, Math.PI*2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+    }
+
+    // ============================
+    // 遊戲主流程
+    // ============================
+    let player, snake, bullets;
+    let gridOffset = { x: 0, y: 0 }; // 用於背景移動感
+
+    function initGame() {
+        player = new Player();
+        snake = new Snake();
+        bullets = [];
+        score = 0;
+        level = 1;
+        frameCount = 0;
+        gameRunning = true;
+        document.getElementById('game-over-screen').style.display = 'none';
+    }
+
+    function drawBackground() {
+        // 繪製草地背景與網格
+        ctx.fillStyle = '#e6f9e6'; // 淺草綠
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 簡單網格線，製造移動感 (其實是畫布不動，網格在動的錯覺)
+        // 為了簡單起見，這裡使用固定網格，讓玩家覺得是自己在動
+        ctx.strokeStyle = 'rgba(46, 204, 113, 0.2)';
+        ctx.lineWidth = 2;
+        const gridSize = 50;
+        
+        // 根據玩家位置計算網格偏移，製造相機跟隨感
+        // 這裡做一個簡單的視覺欺騙：網格隨著 (-player.x, -player.y) 移動
+        let shiftX = -player.x % gridSize;
+        let shiftY = -player.y % gridSize;
+
+        ctx.beginPath();
+        for(let x = shiftX; x < canvas.width; x += gridSize) {
+            ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height);
+        }
+        for(let y = shiftY; y < canvas.height; y += gridSize) {
+            ctx.moveTo(0, y); ctx.lineTo(canvas.width, y);
+        }
+        ctx.stroke();
+    }
+
+    function drawJoystick() {
+        if (!joystick.active) return;
+        
+        ctx.save();
+        // 底座
+        ctx.beginPath();
+        ctx.arc(joystick.originX, joystick.originY, joystick.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.lineWidth = 2;
+        ctx.fill();
+        ctx.stroke();
+
+        // 搖桿頭
+        ctx.beginPath();
+        ctx.arc(joystick.currentX, joystick.currentY, 20, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = 'rgba(0,0,0,0.2)';
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function gameLoop() {
+        if (!gameRunning) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        drawBackground();
+
+        // 邏輯更新
+        player.update();
+        snake.update(player);
+
+        // 分數機制：存活每秒加分
+        if (frameCount % 60 === 0) {
+            score += 10;
+            // 每 100 分升級
+            if (score % 100 === 0) level++;
+        }
+
+        // 敵人射擊
+        // 難度控制：等級越高，射擊間隔越短 (最快 20幀射一次)
+        let fireRate = Math.max(20, 90 - (level * 5));
+        if (frameCount % fireRate === 0) {
+            bullets.push(new Bullet(snake.x, snake.y, player.x, player.y));
+            // 高等級時發射散射
+            if (level >= 5) {
+                let b2 = new Bullet(snake.x, snake.y, player.x + 50, player.y + 50);
+                let b3 = new Bullet(snake.x, snake.y, player.x - 50, player.y + 50);
+                bullets.push(b2, b3);
+            }
+        }
+
+        // 子彈處理
+        for (let i = bullets.length - 1; i >= 0; i--) {
+            let b = bullets[i];
+            b.update();
+            b.draw();
+
+            // 移除出界子彈
+            if (b.x < -50 || b.x > canvas.width + 50 || b.y < -50 || b.y > canvas.height + 50) {
+                bullets.splice(i, 1);
+                continue;
+            }
+
+            // 碰撞檢測
+            const dist = Math.hypot(b.x - player.x, b.y - player.y);
+            if (dist < player.radius + b.radius - 5) {
+                endGame();
+            }
+        }
+
+        player.draw();
+        snake.draw();
+        drawJoystick();
+
+        // UI 更新
+        document.getElementById('score').innerText = `分數: ${score}`;
+        document.getElementById('level').innerText = `Lv.${level}`;
+
+        frameCount++;
+        requestAnimationFrame(gameLoop);
+    }
+
+    function endGame() {
+        gameRunning = false;
+        player.isStone = true;
+        
+        // 重繪最後一幀以顯示石化
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBackground();
+        for(let b of bullets) b.draw();
+        snake.draw();
+        player.draw(); // 畫出石化狀態
+
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('chiikawa_run_best', highScore);
+            document.getElementById('highscore').innerText = highScore;
+        }
+        
+        document.getElementById('final-score').innerText = score;
+        document.getElementById('game-over-screen').style.display = 'flex';
+    }
+
+    function startGame() {
+        initGame();
+        requestAnimationFrame(gameLoop);
+    }
+
+    // 開始畫面
+    initGame();
+    // 這裡我們直接讓它跑，但最好有一個「點擊開始」來觸發音效(如果有)或全螢幕
+    // 為了簡單起見，直接執行循環
+    gameLoop();
+
+</script>
+</body>
+</html>
