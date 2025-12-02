@@ -2,107 +2,71 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <!-- 關鍵：viewport-fit=cover 解決 iPhone 瀏海與黑邊問題 -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>吉伊卡哇：白蛇大逆襲</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>吉伊卡哇：白蛇異變 (反射版)</title>
     <style>
-        body { 
-            margin: 0; overflow: hidden; background: #2c3e50; 
-            font-family: 'Microsoft JhengHei', sans-serif; 
-            touch-action: none; user-select: none; -webkit-user-select: none; 
-        }
-        #game-container { 
-            position: relative; width: 100%; height: 100vh; 
-            background: linear-gradient(to bottom, #87CEEB, #E0F7FA); 
-            overflow: hidden; 
-        }
+        body { margin: 0; overflow: hidden; background: #2c3e50; font-family: 'Microsoft JhengHei', sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; }
+        #game-container { position: relative; width: 100vw; height: 100vh; background: linear-gradient(to bottom, #87CEEB, #E0F7FA); overflow: hidden; }
         canvas { display: block; width: 100%; height: 100%; }
 
-        /* UI 層級 */
-        .ui-layer { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            pointer-events: none; display: flex; flex-direction: column; 
-            justify-content: center; align-items: center; z-index: 20; 
-            transition: opacity 0.3s; 
-        }
+        /* UI 層 */
+        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; transition: opacity 0.3s; }
         .overlay { background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); }
         .hidden { display: none !important; opacity: 0; }
-
-        /* 按鈕優化 */
-        .btn-start { 
-            background: #ff6b81; color: white; border: 3px solid white; 
-            padding: 12px 40px; font-size: 22px; border-radius: 50px; 
-            cursor: pointer; font-weight: bold; 
-            box-shadow: 0 5px 15px rgba(255,107,129,0.4); 
-            pointer-events: auto; margin: 10px;
-        }
-        .btn-start:active { transform: scale(0.95); }
-        .btn-small { 
-            background: rgba(255,255,255,0.9); border: 2px solid #333; 
-            padding: 5px 12px; font-weight: bold; border-radius: 8px; 
-            cursor: pointer; pointer-events: auto; 
-        }
-
-        /* HUD 與 血條 */
-        #hud { 
-            position: absolute; top: 0; left: 0; width: 100%; 
-            padding: 10px; 
-            padding-top: max(10px, env(safe-area-inset-top)); /* 避開瀏海 */
-            box-sizing: border-box; 
-            pointer-events: none; z-index: 10; 
-        }
-        .top-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .score-board { 
-            background: rgba(255,255,255,0.9); padding: 5px 15px; 
-            border-radius: 20px; font-weight: bold; border: 2px solid #ffb7c5; 
-        }
-
-        /* 玩家血條 */
-        .hp-container { width: 150px; height: 12px; background: #333; border: 2px solid white; border-radius: 10px; overflow: hidden; margin-bottom: 5px; }
-        #hp-bar { width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s; }
-
-        /* BOSS 血條與護盾 */
-        .boss-hp-container { 
-            width: 80%; max-width: 500px; height: 18px; 
-            background: #2c3e50; border: 2px solid #e74c3c; 
-            border-radius: 10px; overflow: hidden; position: relative; 
-            margin: 0 auto; display: none; transition: opacity 0.5s;
-        }
-        #boss-hp-bar { width: 100%; height: 100%; background: linear-gradient(to right, #c0392b, #e74c3c); transition: width 0.2s; }
-        #boss-shield-bar { 
-            position: absolute; top:0; left:0; width: 0%; height: 100%; 
-            background: rgba(52, 152, 219, 0.7); pointer-events: none; transition: width 0.2s;
-        }
-        .boss-name { 
-            position: absolute; top: 0; left: 10px; color: white; 
-            font-size: 12px; line-height: 18px; font-weight: bold; text-shadow: 1px 1px 0 black; 
-        }
-
-        /* 反射按鈕：iPhone 適配 */
-        #btn-reflect { 
-            position: absolute; 
-            /* 關鍵：使用 env(safe-area-inset-bottom) 避免被底部橫條遮擋 */
-            bottom: calc(20px + env(safe-area-inset-bottom)); 
-            right: 20px; 
-            width: 80px; height: 80px; 
-            background: rgba(255, 255, 255, 0.85); 
-            border: 4px solid #3498db; border-radius: 50%; 
-            pointer-events: auto; display: flex; justify-content: center; align-items: center;
-            font-size: 35px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); 
-            transition: transform 0.1s; z-index: 30;
-            -webkit-tap-highlight-color: transparent;
-        }
-        #btn-reflect:active { transform: scale(0.9); background: #3498db; }
-        #btn-reflect.cooldown { opacity: 0.5; border-color: #95a5a6; background: #bdc3c7; pointer-events: none; }
-
-        /* 特效與彈窗 */
-        .modal { background: white; padding: 20px; border-radius: 15px; width: 85%; max-width: 400px; text-align: center; border: 4px solid #ffb7c5; pointer-events: auto; }
-        #damage-flash { position: absolute; top:0; left:0; width:100%; height:100%; background: red; opacity: 0; pointer-events: none; z-index: 5; transition: opacity 0.1s; }
-        #panic-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,50,0.3); opacity: 0; pointer-events: none; z-index: 4; transition: opacity 0.5s; }
-        #item-msg { position: absolute; top: 25%; width: 100%; text-align: center; font-size: 24px; font-weight: bold; text-shadow: 2px 2px 0 #fff; opacity: 0; transition: opacity 0.5s; z-index: 15; pointer-events: none; }
         
-        select { padding: 8px; width: 100%; margin-top: 5px; font-size: 16px; }
+        /* 按鈕樣式 */
+        .btn-group { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; pointer-events: auto; }
+        .btn-start { background: #ff6b81; color: white; border: 3px solid white; padding: 12px 40px; font-size: 22px; border-radius: 50px; cursor: pointer; font-weight: bold; transition: transform 0.1s; box-shadow: 0 5px 15px rgba(255,107,129,0.4); }
+        .btn-start:active { transform: scale(0.95); }
+        .btn-setting { background: #3498db; }
+        .btn-small { background: rgba(255,255,255,0.9); border: 2px solid #333; padding: 5px 12px; font-weight: bold; border-radius: 8px; cursor: pointer; pointer-events: auto; }
+
+        /* HUD & Controls */
+        #hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; pointer-events: none; z-index: 10; }
+        .top-row { display: flex; justify-content: space-between; margin-bottom: 5px; width: 100%; }
+        .score-board { background: rgba(255,255,255,0.9); padding: 5px 15px; border-radius: 20px; font-weight: bold; border: 2px solid #ffb7c5; pointer-events: auto; }
+        
+        /* 血條區塊 (玩家與Boss) */
+        .bars-container { display: flex; flex-direction: column; gap: 5px; width: 100%; align-items: flex-start; }
+        
+        .hp-label { color: white; font-size: 10px; text-shadow: 1px 1px 0 #000; margin-bottom: 2px; }
+        .hp-container { width: 200px; height: 15px; background: #333; border: 2px solid white; border-radius: 10px; overflow: hidden; position: relative; }
+        .hp-bar { width: 100%; height: 100%; transition: width 0.2s; }
+        #player-hp-bar { background: linear-gradient(to right, #2ecc71, #27ae60); }
+        #boss-hp-bar { background: linear-gradient(to right, #e74c3c, #c0392b); }
+        
+        /* 反射按鈕 (右下角) */
+        #btn-reflect { 
+            position: absolute; bottom: 30px; right: 30px; 
+            width: 80px; height: 80px; 
+            background: rgba(255, 255, 255, 0.8); 
+            border: 4px solid #3498db; border-radius: 50%; 
+            display: flex; justify-content: center; align-items: center;
+            font-size: 14px; font-weight: bold; color: #3498db;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            pointer-events: auto; user-select: none;
+            transition: transform 0.1s, background 0.1s;
+        }
+        #btn-reflect:active { transform: scale(0.9); background: #fff; }
+        #btn-reflect.cooldown { border-color: #95a5a6; color: #95a5a6; opacity: 0.6; }
+
+        /* CD 遮罩 */
+        #reflect-cd-overlay {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 0%;
+            background: rgba(0,0,0,0.5); border-radius: 50%;
+            transition: height 0.1s linear;
+        }
+
+        /* 視窗 */
+        .modal { background: white; padding: 20px; border-radius: 15px; width: 80%; max-width: 400px; text-align: center; border: 4px solid #ffb7c5; pointer-events: auto; }
+        .modal h2 { color: #ff6b81; margin-top: 0; }
+        .rank-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; color: #555; }
         .setting-row { margin: 15px 0; text-align: left; }
+        .setting-row label { display: block; font-weight: bold; margin-bottom: 5px; color: #333; }
+        select { width: 100%; padding: 8px; font-size: 16px; border-radius: 5px; }
+
+        #damage-flash { position: absolute; top:0; left:0; width:100%; height:100%; background: red; opacity: 0; pointer-events: none; z-index: 5; transition: opacity 0.1s; }
+        #item-msg { position: absolute; top: 20%; width: 100%; text-align: center; font-size: 24px; font-weight: bold; text-shadow: 2px 2px 0 #fff; opacity: 0; transition: opacity 0.5s; z-index: 15; }
     </style>
 </head>
 <body>
@@ -110,122 +74,136 @@
 <div id="game-container">
     <canvas id="gameCanvas"></canvas>
     <div id="damage-flash"></div>
-    <div id="panic-overlay"></div> <!-- 驚嚇模式的背景變暗 -->
 
     <!-- HUD -->
     <div id="hud" class="hud hidden">
         <div class="top-row">
             <div class="score-board"><span data-t="score">Score</span>: <span id="score-val">0</span></div>
-            <button id="btn-pause" class="btn-small" data-t="pause">II</button>
+            <button id="btn-pause" class="btn-small" data-t="pause">暫停</button>
         </div>
         
-        <div class="hp-container"><div id="hp-bar"></div></div>
+        <div class="bars-container">
+            <div>
+                <div class="hp-label">CHIIKAWA HP</div>
+                <div class="hp-container"><div id="player-hp-bar" class="hp-bar"></div></div>
+            </div>
+            <div>
+                <div class="hp-label">BOSS HP</div>
+                <div class="hp-container" style="border-color: #ffb7c5;"><div id="boss-hp-bar" class="hp-bar"></div></div>
+            </div>
+        </div>
 
-        <div class="boss-hp-container" id="boss-hp-wrapper">
-            <div id="boss-hp-bar"></div>
-            <div id="boss-shield-bar"></div> <!-- 護盾條 -->
-            <div class="boss-name" id="boss-name-display">White Snake</div>
+        <div id="btn-reflect" ontouchstart="triggerReflect(event)" onmousedown="triggerReflect(event)">
+            <span data-t="reflect_btn">鏡反射</span>
+            <div id="reflect-cd-overlay"></div>
         </div>
     </div>
     
-    <!-- 反射按鈕 -->
-    <div id="btn-reflect" class="hidden">🪞</div>
     <div id="item-msg"></div>
 
-    <!-- 標題 -->
+    <!-- 標題畫面 -->
     <div id="start-screen" class="ui-layer overlay">
-        <h1 style="color:#ffb7c5; text-shadow:2px 2px 0 white; font-size:32px;" data-t="title">吉伊卡哇</h1>
-        <p style="color:white; font-size:14px; text-align:center; padding:0 20px;">
-            <span data-t="instruction">反射子彈破盾，敵人變藍時撞擊它！</span>
+        <h1 style="color:#ffb7c5; text-shadow:2px 2px 0 white; font-size:32px; margin-bottom:10px;" data-t="title">吉伊卡哇：白蛇異變</h1>
+        <p style="color:white; font-size:14px; text-align:center;">
+            <span data-t="tutorial_move">滑動移動</span> | <span data-t="tutorial_reflect">點擊/空白鍵 反射攻擊</span>
         </p>
-        <button class="btn-start" onclick="startGame()" data-t="start">開始</button>
-        <div style="margin-top:10px;">
-            <button class="btn-small" onclick="openSettings()" data-t="settings">設定</button>
-            <button class="btn-small" onclick="showLeaderboard()" data-t="ranking">榜單</button>
+        <div class="btn-group">
+            <button class="btn-start" onclick="startGame()" data-t="start">開始討伐</button>
+            <button class="btn-start btn-setting" onclick="openSettings()" data-t="settings">設定</button>
+            <button class="btn-small" onclick="showLeaderboard()" style="background:#fff; margin-top:10px;" data-t="ranking">排行榜</button>
         </div>
-        <div id="loading-msg" style="margin-top:15px; color:white; font-size:12px;">Loading...</div>
+        <div id="loading-msg" style="margin-top:20px; color:white; font-size:12px;">Loading...</div>
     </div>
 
-    <!-- 設定 -->
+    <!-- 設定畫面 -->
     <div id="settings-screen" class="ui-layer overlay hidden">
         <div class="modal">
             <h2 data-t="settings">設定</h2>
             <div class="setting-row">
-                <label data-t="language">語言</label>
+                <label data-t="language">語言 / Language</label>
                 <select id="lang-select" onchange="changeLanguage(this.value)">
-                    <option value="zh">繁體中文</option>
-                    <option value="ja">日本語</option>
+                    <option value="zh">繁體中文 (Taiwan)</option>
+                    <option value="ja">日本語 (Japanese)</option>
                 </select>
             </div>
             <div class="setting-row">
-                <label data-t="difficulty">難度</label>
+                <label data-t="difficulty">難度 / Difficulty</label>
                 <select id="diff-select" onchange="changeDifficulty(this.value)">
-                    <option value="0">Easy</option>
-                    <option value="1">Normal</option>
-                    <option value="2">Hard</option>
-                    <option value="3">Lunatic</option>
+                    <option value="0">Easy (傷害 50%)</option>
+                    <option value="1">Normal (傷害 100%)</option>
+                    <option value="2">Hard (傷害 150%)</option>
+                    <option value="3">Lunatic (傷害 200%)</option>
                 </select>
             </div>
-            <button class="btn-start" onclick="closeSettings()" data-t="back">OK</button>
+            <button class="btn-start" onclick="closeSettings()" style="padding: 8px 30px; font-size: 18px;" data-t="back">返回</button>
         </div>
     </div>
 
-    <!-- 排行榜 -->
+    <!-- 排行榜畫面 -->
     <div id="leaderboard-screen" class="ui-layer overlay hidden">
         <div class="modal">
-            <h2 data-t="ranking_title">紀錄</h2>
-            <div id="rank-list" style="text-align:left; padding:10px;"></div>
-            <button class="btn-start" onclick="closeLeaderboard()" data-t="back">OK</button>
+            <h2 data-t="ranking_title">討伐紀錄 (Top 5)</h2>
+            <div id="rank-list"></div>
+            <br>
+            <button class="btn-start" onclick="closeLeaderboard()" style="padding: 8px 30px; font-size: 18px;" data-t="back">返回</button>
         </div>
     </div>
 
-    <!-- 結算 -->
+    <!-- 暫停/結束 -->
+    <div id="pause-screen" class="ui-layer overlay hidden">
+        <h2 style="color:white;" data-t="paused">暫停中</h2>
+        <div class="btn-group">
+            <button class="btn-start" onclick="resumeGame()" data-t="resume">繼續</button>
+            <button class="btn-small" onclick="backToMenu()" data-t="back_menu">回標題</button>
+        </div>
+    </div>
+
     <div id="game-over-screen" class="ui-layer overlay hidden">
         <h1 style="color:#bdc3c7;" data-t="petrified">已石化...</h1>
-        <p style="color:white; font-size:24px;"><span id="final-score">0</span></p>
-        <button class="btn-start" onclick="startGame()" data-t="retry">重來</button>
-        <button class="btn-small" onclick="backToMenu()" data-t="back_menu" style="margin-top:10px;">回標題</button>
-    </div>
-    
-    <!-- 暫停 -->
-    <div id="pause-screen" class="ui-layer overlay hidden">
-        <h2 style="color:white;" data-t="paused">暫停</h2>
-        <button class="btn-start" onclick="resumeGame()" data-t="resume">繼續</button>
-        <button class="btn-small" onclick="backToMenu()" data-t="back_menu" style="margin-top:10px;">離開</button>
+        <p style="color:white; font-size:20px;"><span data-t="final_score">最終分數</span>: <span id="final-score">0</span></p>
+        <div class="btn-group">
+            <button class="btn-start" onclick="startGame()" data-t="retry">再次挑戰</button>
+            <button class="btn-small" onclick="backToMenu()" data-t="back_menu">回標題</button>
+        </div>
     </div>
 </div>
 
 <script>
-    // ============================
-    // 1. 語言與資料 (i18n & Data)
-    // ============================
+    // =========================================
+    // 1. 多語言與設定管理
+    // =========================================
     const TEXT = {
         zh: {
-            title: "吉伊卡哇：白蛇逆襲", start: "討伐開始", settings: "設定", ranking: "排行榜",
+            title: "吉伊卡哇：白蛇異變", start: "開始討伐", settings: "設定", ranking: "排行榜",
             score: "分數", pause: "暫停", paused: "暫停中", resume: "繼續", back_menu: "回標題",
-            petrified: "吉伊卡哇已石化...", retry: "再次挑戰", ranking_title: "Top 5 紀錄", back: "返回",
+            petrified: "已石化...", final_score: "最終分數", retry: "再次挑戰",
+            ranking_title: "討伐紀錄 (Top 5)", back: "返回", reflect_btn: "鏡反射",
             language: "語言 / Language", difficulty: "難度 / Difficulty",
-            msg_panic: "機會！快撞擊白蛇！", msg_shield: "護盾展開！反射破盾！", msg_defeat: "擊退白蛇！",
-            instruction: "反射子彈破盾，敵人變藍時撞擊它！",
-            boss_name: "白蛇", boss_panic: "白蛇 (驚嚇中!)",
-            diff_0: "Easy (新手)", diff_1: "Normal (普通)", diff_2: "Hard (困難)", diff_3: "Lunatic (極限)"
+            diff_0: "Easy (傷害 50%)", diff_1: "Normal (傷害 100%)", diff_2: "Hard (傷害 150%)", diff_3: "Lunatic (傷害 200%)",
+            msg_invincible: "無敵時間!", msg_heal: "體力恢復!", msg_ready: "準備完成!", loading: "載入中...",
+            msg_reflect: "反射成功!", msg_break: "白蛇被擊倒!",
+            tutorial_move: "滑動移動", tutorial_reflect: "點擊/空白鍵 反射"
         },
         ja: {
-            title: "ちいかわ：白蛇の逆襲", start: "討伐開始", settings: "設定", ranking: "ランキング",
-            score: "スコア", pause: "一時停止", paused: "ポーズ中", resume: "再開", back_menu: "タイトルへ",
-            petrified: "石化しました...", retry: "もう一度", ranking_title: "Top 5 記録", back: "戻る",
+            title: "ちいかわ：白蛇の異変", start: "討伐開始", settings: "設定", ranking: "ランキング",
+            score: "スコア", pause: "一時停止", paused: "一時停止中", resume: "再開", back_menu: "タイトルへ",
+            petrified: "石化しました...", final_score: "最終スコア", retry: "もう一度挑戦",
+            ranking_title: "討伐記録 (Top 5)", back: "戻る", reflect_btn: "反射",
             language: "言語 / Language", difficulty: "難易度 / Difficulty",
-            msg_panic: "チャンス！体当たりしろ！", msg_shield: "バリア展開！反射せよ！", msg_defeat: "白蛇撃退！",
-            instruction: "弾を反射して盾を壊せ！青い時は体当たり！",
-            boss_name: "白蛇", boss_panic: "白蛇 (パニック!)",
-            diff_0: "Easy (易しい)", diff_1: "Normal (普通)", diff_2: "Hard (難しい)", diff_3: "Lunatic (極悪)"
+            diff_0: "Easy (ダメージ 50%)", diff_1: "Normal (ダメージ 100%)", diff_2: "Hard (ダメージ 150%)", diff_3: "Lunatic (ダメージ 200%)",
+            msg_invincible: "無敵モード!", msg_heal: "体力回復!", msg_ready: "準備完了!", loading: "ロード中...",
+            msg_reflect: "反射成功!", msg_break: "白蛇ダウン!",
+            tutorial_move: "スライド移動", tutorial_reflect: "タップ/Space 反射"
         }
     };
 
     let userLang = navigator.language.startsWith('ja') ? 'ja' : 'zh';
-    let currentLang = localStorage.getItem('chiikawa_lang') || userLang;
-    let currentDiff = parseInt(localStorage.getItem('chiikawa_diff')) || 1;
+    let savedLang = localStorage.getItem('chiikawa_lang');
+    let currentLang = savedLang || userLang;
+
     let diffMultipliers = [0.5, 1.0, 1.5, 2.0];
+    let savedDiff = localStorage.getItem('chiikawa_diff');
+    let currentDiff = savedDiff ? parseInt(savedDiff) : 1;
 
     function updateUIText() {
         document.querySelectorAll('[data-t]').forEach(el => {
@@ -237,20 +215,23 @@
         const diffOpts = document.getElementById('diff-select').options;
         for(let i=0; i<4; i++) diffOpts[i].text = TEXT[currentLang][`diff_${i}`];
     }
+
     function changeLanguage(val) { currentLang = val; localStorage.setItem('chiikawa_lang', val); updateUIText(); }
     function changeDifficulty(val) { currentDiff = parseInt(val); localStorage.setItem('chiikawa_diff', val); }
 
-    function saveScore(s) {
+    function saveScore(newScore) {
         let scores = JSON.parse(localStorage.getItem('chiikawa_scores') || '[]');
-        scores.push({ score: s, date: new Date().toLocaleDateString() });
-        scores.sort((a,b)=>b.score-a.score);
-        localStorage.setItem('chiikawa_scores', JSON.stringify(scores.slice(0,5)));
+        scores.push({ score: newScore, date: new Date().toLocaleDateString() });
+        scores.sort((a, b) => b.score - a.score);
+        scores = scores.slice(0, 5);
+        localStorage.setItem('chiikawa_scores', JSON.stringify(scores));
     }
     function showLeaderboard() {
-        const list = document.getElementById('rank-list'); list.innerHTML='';
-        const scores = JSON.parse(localStorage.getItem('chiikawa_scores')||'[]');
-        if(scores.length===0) list.innerHTML="<p>尚無紀錄</p>";
-        scores.forEach((s,i)=> list.innerHTML+=`<div style="display:flex;justify-content:space-between;border-bottom:1px solid #eee;padding:5px;"><span>#${i+1}</span><span>${s.score}</span></div>`);
+        const list = document.getElementById('rank-list');
+        list.innerHTML = '';
+        let scores = JSON.parse(localStorage.getItem('chiikawa_scores') || '[]');
+        if (scores.length === 0) list.innerHTML = '<p>No Data</p>';
+        scores.forEach((s, i) => list.innerHTML += `<div class="rank-row"><span>#${i+1} ${s.date}</span><span>${s.score}</span></div>`);
         document.getElementById('start-screen').classList.add('hidden');
         document.getElementById('leaderboard-screen').classList.remove('hidden');
     }
@@ -258,64 +239,64 @@
     function openSettings() { document.getElementById('start-screen').classList.add('hidden'); document.getElementById('settings-screen').classList.remove('hidden'); }
     function closeSettings() { document.getElementById('settings-screen').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden'); }
 
-    // ============================
-    // 2. 核心引擎 (Canvas & Input)
-    // ============================
+    // =========================================
+    // 2. 遊戲引擎與資源
+    // =========================================
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     
-    // 圖片載入
     const images = {};
     const imgSrc = {
         smile: 'images/smile.png', cry: 'images/cry.png', st: 'images/st.png', 
         run: 'images/run.png', nor: 'images/nor.png', kagami: 'images/kagami.png',
-        snake_normal: 'images/snake_normal.png', snake_attack: 'images/snake_attack.png', snake_angry: 'images/snake_angry.png',
+        snake_normal: 'images/snake_normal.png', snake_attack: 'images/snake_attack.png', 
+        snake_angry: 'images/snake_angry.png', snake_scared: 'images/snake_scared.png', snake_cry: 'images/snake_cry.png',
         blue_cookie: 'images/blue_cookie.png', hp_ramen: 'images/hp_ramen.png'
     };
     let loadedCount = 0;
+    const totalImages = Object.keys(imgSrc).length;
+
     for(let k in imgSrc) {
-        images[k] = new Image(); images[k].src = imgSrc[k];
-        images[k].onload = ()=>{ loadedCount++; if(loadedCount===Object.keys(imgSrc).length) updateUIText(); };
-        images[k].onerror = ()=>{ loadedCount++; };
+        images[k] = new Image();
+        images[k].src = imgSrc[k];
+        images[k].onload = () => { loadedCount++; if(loadedCount===totalImages) updateUIText(); };
+        images[k].onerror = () => { loadedCount++; };
     }
 
-    // 視窗與邊界處理 (解決拉長問題)
-    let gameBounds = { x: 0, y: 0, width: 0, height: 0 };
-    function resize() { 
-        canvas.width = window.innerWidth; 
-        canvas.height = window.innerHeight;
-        // 設定遊戲活動範圍，保留上下邊界，防止太貼邊
-        gameBounds.width = canvas.width;
-        gameBounds.height = canvas.height;
-    }
-    window.addEventListener('resize', resize); resize();
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    window.addEventListener('resize', resize);
+    resize();
+    updateUIText();
 
-    // 輸入系統
     const input = { active: false, lastX: 0, lastY: 0 };
-    const keys = { space: false };
+    const keys = { w:false, a:false, s:false, d:false };
     
+    // 觸控移動 (排除按鈕區域)
     canvas.addEventListener('touchstart', e => {
         if(currentState !== STATE.PLAYING) return;
-        const t = e.touches[0]; input.lastX = t.clientX; input.lastY = t.clientY; input.active = true;
+        if(e.target.id === 'btn-reflect' || e.target.parentElement.id === 'btn-reflect') return; // 防止按鈕觸發移動
+        const t = e.touches[0];
+        input.lastX = t.clientX; input.lastY = t.clientY; input.active = true;
     }, {passive: false});
+
     canvas.addEventListener('touchmove', e => {
         if(currentState !== STATE.PLAYING || !input.active) return;
-        e.preventDefault(); const t = e.touches[0];
+        e.preventDefault();
+        const t = e.touches[0];
         player.move((t.clientX - input.lastX)*1.5, (t.clientY - input.lastY)*1.5);
         input.lastX = t.clientX; input.lastY = t.clientY;
     }, {passive: false});
     canvas.addEventListener('touchend', () => input.active = false);
-    
-    window.addEventListener('keydown', e => { if(e.code === 'Space') { keys.space = true; player.triggerReflect(); } });
-    
-    const reflectBtn = document.getElementById('btn-reflect');
-    // 使用 touchend 或 click 來觸發，避免長按問題
-    reflectBtn.addEventListener('touchstart', (e) => { e.preventDefault(); if(currentState === STATE.PLAYING) player.triggerReflect(); });
-    reflectBtn.addEventListener('mousedown', (e) => { e.preventDefault(); if(currentState === STATE.PLAYING) player.triggerReflect(); });
 
-    // ============================
-    // 3. 遊戲物件 (Game Objects)
-    // ============================
+    window.addEventListener('keydown', e => { 
+        if(e.key.startsWith('Arrow')) keys[e.key]=true; 
+        if(e.code === 'Space') { triggerReflect(); }
+    });
+    window.addEventListener('keyup', e => { if(e.key.startsWith('Arrow')) keys[e.key]=false; });
+
+    // =========================================
+    // 3. 遊戲物件
+    // =========================================
     const STATE = { MENU: 0, PLAYING: 1, PAUSED: 2, GAMEOVER: 3 };
     let currentState = STATE.MENU;
     let score = 0, frameCount = 0;
@@ -324,239 +305,105 @@
 
     class Player {
         constructor() {
-            this.x = canvas.width/2; this.y = canvas.height - 150;
-            this.size = 60; this.hitbox = 5; this.speed = 7;
+            this.x = canvas.width/2; this.y = canvas.height-150;
+            this.size = 60; this.hitbox = 4; this.speed = 7;
             this.hp = 100; this.maxHp = 100;
             this.invincible = 0; this.superInv = false;
             this.smile = 0; this.moving = false; this.isStone = false;
             
-            this.reflecting = false;
-            this.reflectTimer = 0; this.reflectCD = 0;
+            // 鏡子相關
+            this.isReflecting = false;
+            this.reflectTimer = 0; // 持續時間
+            this.reflectCD = 0;    // 冷卻時間
+            this.maxReflectCD = 180; // 3秒
         }
         move(dx, dy) {
             if(this.isStone) return;
             this.x += dx; this.y += dy;
-            // 限制移動範圍
             this.x = Math.max(30, Math.min(canvas.width-30, this.x));
-            this.y = Math.max(50, Math.min(canvas.height-50, this.y));
+            this.y = Math.max(30, Math.min(canvas.height-30, this.y));
             this.moving = (Math.abs(dx)>0.1 || Math.abs(dy)>0.1);
-        }
-        triggerReflect() {
-            if(this.isStone || this.reflectCD > 0) return;
-            this.reflecting = true;
-            this.reflectTimer = 30; // 0.5s duration
-            this.reflectCD = 60;    // 1s cooldown (Buffed from 1.5s)
-            reflectBtn.classList.add('cooldown');
         }
         update() {
             if(this.isStone) return;
-            if(!input.active) this.moving = false;
+            let dx=0, dy=0;
+            if(keys.ArrowUp) dy=-this.speed; if(keys.ArrowDown) dy=this.speed;
+            if(keys.ArrowLeft) dx=-this.speed; if(keys.ArrowRight) dx=this.speed;
+            if(dx||dy) { this.move(dx,dy); this.moving=true; } else if(!input.active) this.moving=false;
             
-            if(this.invincible > 0) { this.invincible--; if(this.invincible<=0) this.superInv=false; }
+            if(this.invincible > 0) {
+                this.invincible--;
+                if(this.invincible <= 0) this.superInv = false;
+            }
             if(this.smile > 0) this.smile--;
 
-            if(this.reflectTimer > 0) { this.reflectTimer--; if(this.reflectTimer<=0) this.reflecting=false; }
-            if(this.reflectCD > 0) { this.reflectCD--; if(this.reflectCD<=0) reflectBtn.classList.remove('cooldown'); }
+            // 鏡子邏輯
+            if(this.isReflecting) {
+                this.reflectTimer--;
+                if(this.reflectTimer <= 0) this.isReflecting = false;
+            }
+            if(this.reflectCD > 0) {
+                this.reflectCD--;
+                updateReflectUI(this.reflectCD, this.maxReflectCD);
+            }
         }
-        takeDamage(dmg) {
-            if(this.invincible > 0) return;
-            this.hp -= dmg * diffMultipliers[currentDiff];
-            updateUI();
+        activateMirror() {
+            if(this.isStone || this.reflectCD > 0 || this.isReflecting) return;
+            this.isReflecting = true;
+            this.reflectTimer = 40; // 開啟 0.6 秒
+            this.reflectCD = this.maxReflectCD;
+        }
+        takeDamage(baseDmg) {
+            if(this.invincible > 0 || this.isReflecting) return; // 反射期間也無敵(但有邏輯判斷是否反射)
+            const finalDmg = baseDmg * diffMultipliers[currentDiff];
+            this.hp -= finalDmg;
+            updateHP();
             const flash = document.getElementById('damage-flash');
             flash.style.opacity = 0.6; setTimeout(()=>flash.style.opacity=0, 100);
+
             if(this.hp <= 0) { this.hp = 0; gameOver(); }
-            else { this.invincible = 90; }
+            else { this.invincible = 90; this.superInv = false; }
         }
         heal(amt) {
             this.hp = Math.min(this.maxHp, this.hp + amt);
-            updateUI(); showMsg(TEXT[currentLang].msg_heal, "#2ecc71"); this.smile=60;
+            updateHP(); showMsg(TEXT[currentLang].msg_heal, "#2ecc71"); this.smile=60;
         }
         draw() {
             ctx.save(); ctx.translate(this.x, this.y);
             
-            // 繪製反射鏡子
-            if(this.reflecting) {
-                ctx.save(); ctx.rotate(-Math.PI/2);
-                if(images.kagami && images.kagami.complete) ctx.drawImage(images.kagami, -35, -35, 70, 70);
-                ctx.restore();
-                // 護盾特效
-                ctx.beginPath(); ctx.arc(0, -30, 40, Math.PI, 0); 
-                ctx.lineWidth=4; ctx.strokeStyle='#3498db'; ctx.stroke();
+            // 鏡子繪製
+            if(this.isReflecting && images.kagami.complete) {
+                // 因為圖片鏡面朝右，我們不需要太多旋轉，就直接畫
+                // 為了視覺效果，可以稍微上下浮動或閃光
+                ctx.shadowColor = 'cyan'; ctx.shadowBlur = 15;
+                // 為了讓它看起來像防禦上方，稍微逆時針轉一點點，並讓吉伊卡哇在後面
+                ctx.drawImage(images.kagami, -35, -45, 70, 70); 
+                ctx.shadowBlur = 0;
             } else {
                 // 正常繪圖
-                if(this.invincible>0 && Math.floor(frameCount/4)%2===0) ctx.globalAlpha = 0.5;
+                if(this.invincible>0) {
+                    if(this.superInv) {
+                        ctx.beginPath(); ctx.arc(0,0,35,0,Math.PI*2);
+                        ctx.fillStyle = `rgba(52, 152, 219, ${0.4+Math.sin(frameCount*0.5)*0.2})`; ctx.fill();
+                        ctx.strokeStyle='#3498db'; ctx.lineWidth=2; ctx.stroke();
+                    } else if(Math.floor(frameCount/4)%2===0) ctx.globalAlpha = 0.5;
+                }
+                
                 let img = images.nor;
                 if(this.isStone) img = images.st;
                 else if(this.smile>0) img = images.smile;
                 else if(this.invincible>0 && !this.superInv) img = images.cry;
                 else if(this.moving) img = images.run;
 
-                if(img && img.complete) {
-                    ctx.shadowColor='rgba(0,0,0,0.2)'; ctx.shadowBlur=5;
-                    ctx.drawImage(img, -30, -30, 60, 60);
-                    ctx.shadowBlur=0;
+                if(img && img.complete) ctx.drawImage(img, -30, -30, 60, 60);
+                else { ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(0,0,30,0,Math.PI*2); ctx.fill(); }
+
+                if(!this.isStone) {
+                    // 判定點
+                    ctx.fillStyle = (this.invincible>0 || this.isReflecting)?'cyan':'red';
+                    ctx.beginPath(); ctx.arc(0,0,this.hitbox,0,Math.PI*2); ctx.fill();
                 }
             }
-            // 判定點
-            if(!this.isStone) {
-                ctx.fillStyle = (this.invincible>0)?'yellow':'red';
-                ctx.beginPath(); ctx.arc(0,0,this.hitbox,0,Math.PI*2); ctx.fill();
-            }
-            ctx.restore();
-        }
-    }
-
-    class Boss {
-        constructor() {
-            this.x = canvas.width/2; this.y = 100;
-            this.tx = this.x; this.ty = 100;
-            this.maxHp = 1000; this.hp = 1000;
-            this.shieldMax = 0; this.shield = 0; // 護盾值
-            
-            this.mode = 'normal'; // normal, shield, panic
-            this.atkTimer = 0;
-            this.panicTimer = 0;
-            this.shields = []; // 護盾物件
-        }
-        update() {
-            // 移動邏輯
-            if(this.mode === 'panic') {
-                // 恐慌模式：遠離玩家 (Pac-Man Blue Ghost)
-                let dx = this.x - player.x;
-                let dy = this.y - player.y;
-                let dist = Math.hypot(dx, dy);
-                if(dist < 300) { // 保持距離
-                    this.tx += (dx/dist) * 5;
-                    this.ty += (dy/dist) * 5;
-                } else {
-                    // 隨機遊走
-                    if(frameCount%60===0) {
-                        this.tx = Math.random()*(canvas.width-100)+50;
-                        this.ty = Math.random()*(canvas.height/2)+50;
-                    }
-                }
-                // 限制在畫面內
-                this.tx = Math.max(50, Math.min(canvas.width-50, this.tx));
-                this.ty = Math.max(50, Math.min(canvas.height-50, this.ty));
-                
-                this.panicTimer--;
-                if(this.panicTimer <= 0) this.recoverFromPanic();
-
-            } else {
-                // 正常模式
-                if(frameCount%120===0) {
-                    this.tx = Math.random()*(canvas.width-100)+50;
-                    this.ty = 80 + Math.sin(frameCount)*20;
-                }
-                // 血量低於20% 觸發恐慌
-                if(this.hp < this.maxHp * 0.2 && this.mode !== 'panic' && this.mode !== 'shield') {
-                    this.enterPanic();
-                }
-                // 護盾召喚 (打磚塊模式)
-                if(this.mode !== 'shield' && this.mode !== 'panic' && frameCount % 600 === 0) {
-                    this.enterShieldMode();
-                }
-            }
-            
-            // 平滑移動
-            this.x += (this.tx - this.x) * 0.05;
-            this.y += (this.ty - this.y) * 0.05;
-            if(this.atkTimer>0) this.atkTimer--;
-
-            // 護盾旋轉
-            if(this.mode === 'shield') {
-                this.shields.forEach((s, i) => {
-                    s.angle += 0.05;
-                    s.x = this.x + Math.cos(s.angle) * 80;
-                    s.y = this.y + Math.sin(s.angle) * 80;
-                });
-                if(this.shields.length === 0) this.mode = 'normal'; // 盾破
-            }
-        }
-        
-        enterPanic() {
-            this.mode = 'panic';
-            this.panicTimer = 600; // 10秒
-            bullets = []; // 清空彈幕
-            showMsg(TEXT[currentLang].msg_panic, "#3498db");
-            document.getElementById('panic-overlay').style.opacity = 1;
-        }
-
-        recoverFromPanic() {
-            this.mode = 'normal';
-            this.hp = this.maxHp * 0.5; // 回血一半
-            document.getElementById('panic-overlay').style.opacity = 0;
-        }
-        
-        enterShieldMode() {
-            this.mode = 'shield';
-            this.shields = [];
-            for(let i=0; i<6; i++) {
-                this.shields.push({ x:0, y:0, angle: (Math.PI*2/6)*i, hp: 1 });
-            }
-            showMsg(TEXT[currentLang].msg_shield, "#e67e22");
-        }
-
-        takeDamage(val) {
-            if(this.mode === 'panic') {
-                // 恐慌時被撞擊 -> 秒殺
-                this.hp = 0;
-            } else if (this.mode === 'shield') {
-                // 有護盾時本體無敵
-                val = 0; 
-            }
-            
-            this.hp -= val;
-            if(this.hp <= 0) {
-                // 擊敗
-                score += 5000;
-                showMsg(TEXT[currentLang].msg_defeat, "#f1c40f");
-                this.maxHp += 500; this.hp = this.maxHp;
-                this.mode = 'normal';
-                bullets = [];
-                document.getElementById('panic-overlay').style.opacity = 0;
-            }
-            updateUI();
-        }
-
-        draw() {
-            ctx.save(); ctx.translate(this.x, this.y);
-
-            // 護盾繪製
-            if(this.mode === 'shield') {
-                this.shields.forEach(s => {
-                    ctx.save(); ctx.translate(s.x-this.x, s.y-this.y);
-                    ctx.fillStyle = '#e67e22'; 
-                    ctx.fillRect(-15, -15, 30, 30);
-                    ctx.strokeStyle='white'; ctx.strokeRect(-15,-15,30,30);
-                    ctx.restore();
-                });
-            }
-
-            // 本體
-            if(this.mode === 'panic') {
-                // 藍色濾鏡效果
-                ctx.filter = 'hue-rotate(180deg) brightness(1.2)'; 
-                document.getElementById('boss-name-display').innerText = TEXT[currentLang].boss_panic;
-            } else {
-                ctx.filter = 'none';
-                document.getElementById('boss-name-display').innerText = TEXT[currentLang].boss_name;
-            }
-
-            // 魔法陣
-            ctx.rotate(frameCount*0.02); 
-            ctx.strokeStyle = (this.mode==='panic')?'#3498db':((score>1500)?'red':'white');
-            ctx.setLineDash([5,5]); ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,0,60,0,Math.PI*2); ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.rotate(-frameCount*0.02); // 轉回來
-
-            // 圖片
-            let img = images.snake_normal;
-            if(this.atkTimer>0) { img = images.snake_attack; ctx.scale(1.1,1.1); }
-            else if(score>1500 && this.mode !== 'panic') img = images.snake_angry;
-            
-            if(img && img.complete) ctx.drawImage(img, -50, -50, 100, 100);
-            
             ctx.restore();
         }
     }
@@ -564,108 +411,233 @@
     class Bullet {
         constructor(x, y, vx, vy, type) {
             this.x=x; this.y=y; this.vx=vx; this.vy=vy;
-            this.type = type; 
+            this.type = type; // 0:Rice, 1:Orb, 2:Reflected(Friendly)
             this.r = type===1 ? 12 : 6;
             this.color = type===1 ? '#8e44ad' : '#9b59b6';
-            this.dmg = type===1 ? 30 : 15; 
-            this.isFriendly = false;
+            this.dmg = type===1 ? 30 : 15;
+            this.isFriendly = false; // 是否為反彈後的子彈
         }
         update() { this.x+=this.vx; this.y+=this.vy; }
         draw() {
             ctx.save(); ctx.translate(this.x, this.y);
-            if(this.isFriendly) {
-                ctx.shadowBlur=10; ctx.shadowColor='#00ffff'; ctx.fillStyle='#00ffff';
-            } else {
-                ctx.shadowBlur=5; ctx.shadowColor=this.color; ctx.fillStyle=this.color;
-            }
+            ctx.fillStyle = this.color; ctx.shadowBlur=this.isFriendly?10:5; ctx.shadowColor=this.color;
             ctx.beginPath(); ctx.arc(0,0,this.r,0,Math.PI*2); ctx.fill();
             ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(0,0,this.r*0.6,0,Math.PI*2); ctx.fill();
+            ctx.restore();
+        }
+        reflect(targetX, targetY) {
+            this.isFriendly = true;
+            this.color = '#3498db'; // 變藍色
+            this.dmg = 50; // 反彈傷害
+            // 重新計算射向 Boss 的向量
+            const angle = Math.atan2(targetY - this.y, targetX - this.x);
+            const speed = 10; // 反彈速度快
+            this.vx = Math.cos(angle) * speed;
+            this.vy = Math.sin(angle) * speed;
+        }
+    }
+
+    class Boss {
+        constructor() { 
+            this.x = canvas.width/2; this.y = 80; 
+            this.tx = this.x; this.atkTimer = 0; 
+            this.maxHp = 1000; this.hp = 1000;
+            this.state = 'normal'; // normal, scared, cry
+            this.stateTimer = 0;
+            this.phase = 1; // 階段
+        }
+        update() {
+            if(this.state === 'cry') {
+                // 哭泣中，不攻擊，只顫抖
+                this.x += (Math.random()-0.5)*5;
+                this.y = 80 + Math.sin(frameCount*0.1)*5;
+                this.stateTimer--;
+                if(this.stateTimer <= 0) {
+                    this.state = 'normal';
+                    this.hp = this.maxHp; // 復活
+                    this.phase++; // 難度提升
+                }
+                return;
+            }
+
+            if(this.state === 'scared') {
+                this.stateTimer--;
+                if(this.stateTimer <= 0) this.state = 'normal';
+            }
+
+            // 正常移動
+            if(frameCount%120===0) this.tx = Math.random()*(canvas.width-100)+50;
+            this.x += (this.tx - this.x)*0.03;
+            this.y = 80 + Math.sin(frameCount*0.04)*20;
+            if(this.atkTimer>0) this.atkTimer--;
+        }
+        takeDamage(amt) {
+            if(this.state === 'cry') return; // 已被打敗時無敵
+            this.hp -= amt;
+            this.state = 'scared';
+            this.stateTimer = 30; // 驚慌 0.5 秒
+            updateBossHP();
+            
+            if(this.hp <= 0) {
+                this.hp = 0;
+                this.state = 'cry';
+                this.stateTimer = 180; // 哭 3 秒
+                showMsg(TEXT[currentLang].msg_break, "#f1c40f");
+                score += 1000; // 擊倒獎勵
+                // 掉落獎勵
+                items.push(new Item('ramen'));
+                items.push(new Item('cookie'));
+            }
+        }
+        draw() {
+            ctx.save(); ctx.translate(this.x, this.y);
+            // 魔法陣
+            if(this.state !== 'cry') {
+                ctx.rotate(frameCount*0.02); ctx.strokeStyle=(score>1500)?'red':'white';
+                ctx.setLineDash([5,5]); ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,0,60,0,Math.PI*2); ctx.stroke();
+                ctx.setLineDash([]); ctx.rotate(-frameCount*0.02);
+            }
+            
+            let img = images.snake_normal;
+            if (this.state === 'cry') img = images.snake_cry;
+            else if (this.state === 'scared') img = images.snake_scared;
+            else if (this.atkTimer > 0) img = images.snake_attack;
+            else if (this.phase >= 3) img = images.snake_angry;
+
+            if(img && img.complete) {
+                if(this.atkTimer>0) ctx.scale(1.1, 1.1);
+                ctx.drawImage(img, -50, -50, 100, 100);
+            }
+            else { ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(0,0,40,0,Math.PI*2); ctx.fill(); }
             ctx.restore();
         }
     }
 
     class Item {
         constructor(type) {
-            this.type=type; this.x=Math.random()*(canvas.width-60)+30; this.y=-50; this.w=0;
+            this.type = type; 
+            this.x = Math.random()*(canvas.width-60)+30; this.y = -50;
+            this.w = 0;
         }
-        update() { this.y+=2.5; this.x+=Math.sin(this.w+=0.05); }
+        update() { this.y += 2.5; this.x += Math.sin(this.w+=0.05); }
         draw() {
             ctx.save(); ctx.translate(this.x, this.y);
             let img = (this.type==='cookie')?images.blue_cookie:images.hp_ramen;
-            if(img&&img.complete) { ctx.shadowColor='white';ctx.shadowBlur=10;ctx.drawImage(img,-20,-20,40,40); }
+            if(img && img.complete) { 
+                ctx.shadowColor='white'; ctx.shadowBlur=10;
+                ctx.drawImage(img, -20, -20, 40, 40); 
+            }
             ctx.restore();
         }
     }
 
-    // ============================
-    // 4. 遊戲主邏輯 (Game Logic)
-    // ============================
+    // =========================================
+    // 4. 遊戲邏輯
+    // =========================================
     function spawnDanmaku() {
-        if(boss.mode === 'panic') return; // 恐慌時不射擊
+        if(boss.state === 'cry') return; // 哭的時候不攻擊
 
-        const phase = Math.min(4, Math.floor(score / 500)); 
+        // 難度隨 phase 增加
+        const speedMult = 1 + (boss.phase * 0.1); 
         let shot = false;
 
-        // 護盾模式射擊 (簡單散射)
-        if(boss.mode === 'shield' && frameCount % 60 === 0) {
-             for(let i=0; i<8; i++) {
-                 let a = (Math.PI*2/8)*i;
-                 bullets.push(new Bullet(boss.x, boss.y, Math.cos(a)*4, Math.sin(a)*4, 0));
-             }
-             shot = true;
-        } 
-        // 正常模式射擊
-        else if (boss.mode === 'normal') {
-            if (frameCount % Math.max(25, 60 - phase*5) === 0) {
-                let angle = Math.atan2(player.y - boss.y, player.x - boss.x);
-                bullets.push(new Bullet(boss.x, boss.y, Math.cos(angle)*5, Math.sin(angle)*5, 0));
-                if(phase>=2) {
-                    bullets.push(new Bullet(boss.x, boss.y, Math.cos(angle+0.3)*5, Math.sin(angle+0.3)*5, 0));
-                    bullets.push(new Bullet(boss.x, boss.y, Math.cos(angle-0.3)*5, Math.sin(angle-0.3)*5, 0));
-                }
-                shot = true;
+        // Pattern 1: 狙擊
+        if (frameCount % Math.max(30, 60 - boss.phase*5) === 0) {
+            let angle = Math.atan2(player.y - boss.y, player.x - boss.x);
+            bullets.push(new Bullet(boss.x, boss.y, Math.cos(angle)*5*speedMult, Math.sin(angle)*5*speedMult, 0));
+            if(boss.phase >= 2) {
+                bullets.push(new Bullet(boss.x, boss.y, Math.cos(angle+0.3)*5*speedMult, Math.sin(angle+0.3)*5*speedMult, 0));
+                bullets.push(new Bullet(boss.x, boss.y, Math.cos(angle-0.3)*5*speedMult, Math.sin(angle-0.3)*5*speedMult, 0));
             }
-            if (phase >= 1 && frameCount % 120 === 0) { // 螺旋
-                let ways = 4 + phase;
-                for(let i=0; i<ways; i++) {
-                    let a = frameCount*0.1 + (Math.PI*2/ways)*i;
-                    bullets.push(new Bullet(boss.x, boss.y, Math.cos(a)*4, Math.sin(a)*4, 0));
-                }
-                shot = true;
-            }
+            shot = true;
         }
+
+        // Pattern 2: 螺旋
+        if (boss.phase >= 1 && frameCount % 10 === 0) {
+            let spiralAngle = frameCount * 0.1; 
+            let ways = 2 + Math.floor(boss.phase/2); 
+            for(let i=0; i<ways; i++) {
+                let a = spiralAngle + (Math.PI * 2 / ways) * i;
+                bullets.push(new Bullet(boss.x, boss.y, Math.cos(a)*4, Math.sin(a)*4, 0));
+            }
+            shot = true;
+        }
+
+        // Pattern 3: 全方位
+        if (frameCount % 180 === 0) {
+            let count = 12 + boss.phase * 2;
+            for (let i = 0; i < count; i++) {
+                let angle = (Math.PI * 2 / count) * i;
+                bullets.push(new Bullet(boss.x, boss.y, Math.cos(angle)*3, Math.sin(angle)*3, 1)); 
+            }
+            shot = true;
+        }
+
         if(shot) boss.atkTimer = 15;
     }
 
-    function updateUI() {
-        document.getElementById('hp-bar').style.width = Math.max(0, (player.hp/player.maxHp)*100) + '%';
-        document.getElementById('boss-hp-bar').style.width = Math.max(0, (boss.hp/boss.maxHp)*100) + '%';
-        document.getElementById('score-val').innerText = score;
-        
-        // 護盾UI
-        const shieldPct = (boss.shields.length / 6) * 100;
-        document.getElementById('boss-shield-bar').style.width = shieldPct + '%';
+    function initGame() {
+        player = new Player(); boss = new Boss();
+        bullets = []; items = [];
+        score = 0; frameCount = 0;
+        nextCookie = 500; nextRamen = 1000;
+        updateHP(); updateBossHP();
+        document.getElementById('score-val').innerText = '0';
+        document.getElementById('item-msg').style.opacity = 0;
+        updateReflectUI(0, 100);
+    }
+
+    function updateHP() {
+        const pct = (player.hp / player.maxHp) * 100;
+        const bar = document.getElementById('player-hp-bar');
+        bar.style.width = Math.max(0, pct) + '%';
+        if(pct > 50) bar.style.background = 'linear-gradient(to right, #2ecc71, #27ae60)';
+        else if(pct > 20) bar.style.background = 'linear-gradient(to right, #f1c40f, #f39c12)';
+        else bar.style.background = 'linear-gradient(to right, #e74c3c, #c0392b)';
+    }
+
+    function updateBossHP() {
+        const pct = (boss.hp / boss.maxHp) * 100;
+        document.getElementById('boss-hp-bar').style.width = Math.max(0, pct) + '%';
+    }
+
+    function triggerReflect(e) {
+        if(e) { e.preventDefault(); e.stopPropagation(); }
+        if(currentState === STATE.PLAYING) player.activateMirror();
+    }
+
+    function updateReflectUI(current, max) {
+        const overlay = document.getElementById('reflect-cd-overlay');
+        const btn = document.getElementById('btn-reflect');
+        if(current > 0) {
+            const pct = (current / max) * 100;
+            overlay.style.height = pct + '%';
+            btn.classList.add('cooldown');
+        } else {
+            overlay.style.height = '0%';
+            btn.classList.remove('cooldown');
+        }
     }
 
     function showMsg(txt, color) {
         const el = document.getElementById('item-msg');
-        el.innerText = txt; el.style.color = color; el.style.opacity = 1;
-        setTimeout(() => el.style.opacity = 0, 2000);
+        el.innerText = txt; el.style.color = color;
+        el.style.opacity = 1; el.style.top = '25%';
+        setTimeout(() => el.style.top = '20%', 50);
+        setTimeout(() => el.style.opacity = 0, 1500);
     }
 
     function loop() {
-        if(currentState !== STATE.PLAYING) return;
+        if (currentState !== STATE.PLAYING) return;
         ctx.clearRect(0,0,canvas.width,canvas.height);
 
         // 背景
         let bg = '#87CEEB';
-        if(boss.mode === 'panic') bg = '#1a252f'; // 恐慌時變暗
-        else if(score > 2000) bg = '#2c3e50'; 
-        else if(score > 1000) bg = '#FDCB6E';
+        if(boss.phase >= 3) bg = '#2c3e50'; else if(boss.phase >= 2) bg = '#FDCB6E';
         ctx.fillStyle = bg; ctx.fillRect(0,0,canvas.width,canvas.height);
 
         frameCount++;
-        if(frameCount%60===0 && boss.mode !== 'panic') { score+=10; updateUI(); }
+        if(frameCount%60===0) { score+=10; document.getElementById('score-val').innerText = score; }
 
         if(score >= nextCookie) { items.push(new Item('cookie')); nextCookie += 500; }
         if(score >= nextRamen) { items.push(new Item('ramen')); nextRamen += 1000; }
@@ -673,15 +645,7 @@
         player.update(); boss.update(); spawnDanmaku();
 
         // 碰撞檢測
-        // 1. 玩家撞 BOSS (吃鬼邏輯)
-        if(boss.mode === 'panic') {
-            const dist = Math.hypot(player.x - boss.x, player.y - boss.y);
-            if(dist < 80) { // 撞到了
-                boss.takeDamage(9999);
-            }
-        }
-
-        // 2. 道具
+        // 1. 道具
         for(let i=items.length-1; i>=0; i--) {
             items[i].update(); items[i].draw();
             if(Math.hypot(items[i].x-player.x, items[i].y-player.y) < 50) {
@@ -691,46 +655,44 @@
             } else if(items[i].y>canvas.height+50) items.splice(i,1);
         }
 
-        // 3. 子彈
+        // 2. 子彈
         for(let i=bullets.length-1; i>=0; i--) {
-            let b = bullets[i]; b.update(); b.draw();
-
-            // 友軍子彈 (反射後)
-            if(b.isFriendly) {
-                // 打中 BOSS
-                if(Math.hypot(b.x - boss.x, b.y - boss.y) < 60) {
-                    boss.takeDamage(50); bullets.splice(i, 1); continue;
-                }
-                // 打中護盾 (Breakout)
-                if(boss.mode === 'shield') {
-                    for(let j=0; j<boss.shields.length; j++) {
-                        let s = boss.shields[j];
-                        if(Math.hypot(b.x - s.x, b.y - s.y) < 30) {
-                            boss.shields.splice(j, 1); // 破盾
-                            bullets.splice(i, 1); // 子彈消耗
-                            updateUI();
-                            break;
-                        }
-                    }
-                }
-                if(b.y < -50) bullets.splice(i, 1);
+            let b = bullets[i];
+            b.update(); b.draw();
+            
+            // 出界
+            if(b.x<-50||b.x>canvas.width+50||b.y<-50||b.y>canvas.height+50) {
+                bullets.splice(i,1);
                 continue;
             }
 
-            // 敵軍子彈
-            // 反射判定
-            if(player.reflecting) {
-                // 鏡子在頭頂
-                if(Math.hypot(b.x - player.x, b.y - (player.y - 30)) < 45) {
-                    b.isFriendly = true; b.vx *= -1.2; b.vy = -Math.abs(b.vy * 1.5);
-                    continue;
+            // A. 敵方子彈 打 玩家
+            if(!b.isFriendly) {
+                const dist = Math.hypot(b.x-player.x, b.y-player.y);
+                
+                // 鏡子反射判定 (範圍比判定點大)
+                if(player.isReflecting && dist < player.size/2 + b.r + 10) {
+                    b.reflect(boss.x, boss.y); // 反彈！
+                    showMsg(TEXT[currentLang].msg_reflect, "#fff");
+                    continue; // 處理下一顆
+                }
+
+                // 傷害判定
+                if(dist < b.r + player.hitbox) {
+                    player.takeDamage(b.dmg);
+                    bullets.splice(i,1);
                 }
             }
-            // 受傷判定
-            if(Math.hypot(b.x-player.x, b.y-player.y) < b.r + player.hitbox) {
-                player.takeDamage(b.dmg); bullets.splice(i,1);
-            } else if(b.x<-50||b.x>canvas.width+50||b.y<-50||b.y>canvas.height+50) {
-                bullets.splice(i,1);
+            // B. 友方子彈 打 BOSS
+            else {
+                const distBoss = Math.hypot(b.x-boss.x, b.y-boss.y);
+                if(distBoss < 60) { // Boss半徑
+                    boss.takeDamage(b.dmg);
+                    bullets.splice(i,1);
+                    // 特效
+                    ctx.fillStyle='rgba(255,255,255,0.8)';
+                    ctx.beginPath(); ctx.arc(boss.x, boss.y, 70, 0, Math.PI*2); ctx.fill();
+                }
             }
         }
 
@@ -738,54 +700,13 @@
         requestAnimationFrame(loop);
     }
 
-    // ============================
-    // 5. 流程控制
-    // ============================
-    function initGame() {
-        player = new Player(); boss = new Boss();
-        bullets = []; items = [];
-        score = 0; frameCount = 0;
-        nextCookie = 500; nextRamen = 1000;
-        updateUI();
-        document.getElementById('item-msg').style.opacity = 0;
-        document.getElementById('btn-reflect').classList.remove('cooldown');
-        document.getElementById('panic-overlay').style.opacity = 0;
-    }
-    function startGame() {
-        initGame(); currentState = STATE.PLAYING;
-        document.getElementById('start-screen').classList.add('hidden');
-        document.getElementById('game-over-screen').classList.add('hidden');
-        document.getElementById('hud').classList.remove('hidden');
-        document.getElementById('btn-reflect').classList.remove('hidden');
-        document.getElementById('boss-hp-wrapper').style.display = 'block';
-        loop();
-    }
-    function gameOver() {
-        currentState = STATE.GAMEOVER; player.isStone = true; saveScore(score);
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        boss.draw(); bullets.forEach(b=>b.draw()); player.draw();
-        document.getElementById('final-score').innerText = score;
-        document.getElementById('hud').classList.add('hidden');
-        document.getElementById('btn-reflect').classList.add('hidden');
-        setTimeout(()=>document.getElementById('game-over-screen').classList.remove('hidden'), 500);
-    }
-    function resumeGame() {
-        currentState = STATE.PLAYING;
-        document.getElementById('pause-screen').classList.add('hidden');
-        loop();
-    }
-    function backToMenu() {
-        currentState = STATE.MENU;
-        document.querySelectorAll('.ui-layer').forEach(el=>el.classList.add('hidden'));
-        document.getElementById('start-screen').classList.remove('hidden');
-        ctx.fillStyle='#87CEEB'; ctx.fillRect(0,0,canvas.width,canvas.height);
-    }
-    document.getElementById('btn-pause').addEventListener('click', ()=>{
-        currentState = STATE.PAUSED;
-        document.getElementById('pause-screen').classList.remove('hidden');
-    });
+    // 流程控制
+    function startGame() { initGame(); currentState = STATE.PLAYING; document.getElementById('start-screen').classList.add('hidden'); document.getElementById('game-over-screen').classList.add('hidden'); document.getElementById('hud').classList.remove('hidden'); loop(); }
+    function gameOver() { currentState = STATE.GAMEOVER; player.isStone=true; saveScore(score); ctx.clearRect(0,0,canvas.width,canvas.height); boss.draw(); bullets.forEach(b=>b.draw()); player.draw(); document.getElementById('final-score').innerText = score; document.getElementById('hud').classList.add('hidden'); setTimeout(()=>document.getElementById('game-over-screen').classList.remove('hidden'), 500); }
+    function resumeGame() { currentState = STATE.PLAYING; document.getElementById('pause-screen').classList.add('hidden'); loop(); }
+    function backToMenu() { currentState = STATE.MENU; document.getElementById('pause-screen').classList.add('hidden'); document.getElementById('game-over-screen').classList.add('hidden'); document.getElementById('hud').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden'); ctx.fillStyle='#87CEEB'; ctx.fillRect(0,0,canvas.width,canvas.height); }
+    document.getElementById('btn-pause').addEventListener('click', ()=>{ currentState = STATE.PAUSED; document.getElementById('pause-screen').classList.remove('hidden'); });
 
-    // Initial
     ctx.fillStyle='#87CEEB'; ctx.fillRect(0,0,canvas.width,canvas.height);
 </script>
 </body>
