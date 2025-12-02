@@ -35,9 +35,12 @@
         #player-hp-bar { background: linear-gradient(to right, #2ecc71, #27ae60); }
         #boss-hp-bar { background: linear-gradient(to right, #e74c3c, #c0392b); }
         
-        /* 反射按鈕 (右下角) */
+        /* 反射按鈕 (右下角) - 修正手機超出範圍問題 */
         #btn-reflect { 
-            position: absolute; bottom: 30px; right: 30px; 
+            position: absolute; 
+            bottom: 60px; /* 提高底部距離，避開手機導覽列 */
+            right: 20px;  /* 稍微往內縮 */
+            margin-bottom: env(safe-area-inset-bottom); /* 適配 iPhone X+ 底部安全區 */
             width: 80px; height: 80px; 
             background: rgba(255, 255, 255, 0.8); 
             border: 4px solid #3498db; border-radius: 50%; 
@@ -45,6 +48,7 @@
             font-size: 14px; font-weight: bold; color: #3498db;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             pointer-events: auto; user-select: none;
+            z-index: 100; /* 確保在最上層 */
             transition: transform 0.1s, background 0.1s;
         }
         #btn-reflect:active { transform: scale(0.9); background: #fff; }
