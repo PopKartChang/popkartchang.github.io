@@ -14,13 +14,13 @@
         <!-- 分頁 -->
         <ul class="nav nav-tabs" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
-                <a class="nav-link" id="query-tab" data-bs-toggle="tab" href="#query" role="tab" aria-controls="query" aria-selected="false">検索</a>
+                <a class="nav-link active" id="query-tab" data-bs-toggle="tab" href="#query" role="tab" aria-controls="query" aria-selected="true">検索</a>
             </li>
             <li class="nav-item" role="presentation">
                 <a class="nav-link" id="reverse-query-tab" data-bs-toggle="tab" href="#reverse-query" role="tab" aria-controls="reverse-query" aria-selected="false">逆検索</a>
             </li>
             <li class="nav-item" role="presentation">
-                <a class="nav-link active" id="upload-tab" data-bs-toggle="tab" href="#upload" role="tab" aria-controls="upload" aria-selected="true">アップロード</a>
+                <a class="nav-link" id="upload-tab" data-bs-toggle="tab" href="#upload" role="tab" aria-controls="upload" aria-selected="false">アップロード</a>
             </li>
         </ul>
         <div class="tab-content mt-4" id="myTabContent">
@@ -80,6 +80,7 @@
         </div>
     </div>
 
+   
    <script>
     // 你的 GAS 網址 (用於上傳檔案)
     const GAS_URL = "https://script.google.com/macros/s/AKfycby8jVOs2w2PyBo4Xpplsfr7Bl_0q-vkENbiHDih_iFxH3nY49zpYF2MvDpUSl1AH30M2w/exec";
