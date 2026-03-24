@@ -79,28 +79,26 @@
     </div>
 
 <script>
-    /**
-     * 安全保護與核心邏輯
-     */
     (function() {
-        // 1. 環境安全偵測：防止下載後本地開啟
+        // 1. 環境安全偵測
         if (window.location.protocol === 'file:') {
-            //document.body.innerHTML = '<h1 style="text-align:center; margin-top:100px;">Access Denied (Security Error)</h1>';
+            document.body.innerHTML = '<h1 style="text-align:center; margin-top:100px;">Access Denied (Security Error)</h1>';
             return;
         }
 
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzhbDP58G1-H0973CuY7z_f4DZ09qOQpIKoZuNwUO8adjlxPwt_R7VYUhHDsFh3euDqvw/exec"; // <--- 請填入你的部署網址
+        // --- 請務必填入你的 GAS 網址 ---
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzhbDP58G1-H0973CuY7z_f4DZ09qOQpIKoZuNwUO8adjlxPwt_R7VYUhHDsFh3euDqvw/exec"; 
+        
         const CACHE_KEY = "MASTER_DATA_CACHE";
         const CACHE_TIME_KEY = "MASTER_DATA_TIME";
-        const EXPIRE_MS = 12 * 60 * 60 * 1000; // 12小時過期
+        const EXPIRE_MS = 4 * 60 * 60 * 1000; 
 
         let masterData = [];
 
-        // 初始化
         window.onload = () => init();
 
         async function init() {
-            // 禁止鍵盤 F12 和 Ctrl+S
+            // 禁止 F12 和 Ctrl+S
             document.onkeydown = e => {
                 if (e.keyCode == 123 || (e.ctrlKey && e.keyCode == 83)) return false;
             };
@@ -110,10 +108,13 @@
             const now = new Date().getTime();
 
             if (cachedData && cachedTime && (now - cachedTime < EXPIRE_MS)) {
-                masterData = JSON.parse(cachedData);
-                showAlert("キャッシュからデータを読み込みました。", "secondary");
-                setSearchEnabled(true);
-                updateVersionDisplay();
+                try {
+                    masterData = JSON.parse(cachedData);
+                    console.log("從快取載入成功，共 " + masterData.length + " 筆");
+                    setSearchEnabled(true);
+                    updateVersionDisplay();
+                    showAlert("キャッシュからデータを読み込みました。", "secondary");
+                } catch(e) { refreshAllData(); }
             } else {
                 refreshAllData();
             }
@@ -123,59 +124,67 @@
             setSearchEnabled(false);
             showLoading(true);
             try {
-                // 取得時間
+                // 1. 取得時間
                 const statusRes = await fetch(`${GAS_URL}?action=get_status`);
                 const statusData = await statusRes.json();
                 document.getElementById("dataVersionText").innerText = statusData.time;
 
-                // 取得資料
+                // 2. 取得全量資料
                 const dataRes = await fetch(`${GAS_URL}?action=get_data`);
                 const result = await dataRes.json();
                 
-                if (result.data) {
-                    // 轉換成物件格式 (第一行為 Header)
-                    const headers = result.data[0];
-                    const rows = result.data.slice(1);
-                    masterData = rows.map(row => {
-                        let obj = {};
-                        headers.forEach((h, i) => obj[h] = row[i]);
-                        return obj;
-                    });
+                if (result.data && result.data.length > 1) {
+                    const rows = result.data.slice(1); // 跳過標題列
+                    
+                    // 強制對應欄位順序，不依賴標題文字
+                    // A欄(0): Shouhin_Code, B欄(1): Item_Code, C欄(2): Color, D欄(3): Size
+                    masterData = rows.map(row => ({
+                        Shouhin_Code: String(row[0] || "").trim(),
+                        Item_Code:    String(row[1] || "").trim(),
+                        Color_Name:   String(row[2] || "").trim(),
+                        Size_Name:    String(row[3] || "").trim()
+                    }));
 
-                    // 存入快取
                     localStorage.setItem(CACHE_KEY, JSON.stringify(masterData));
                     localStorage.setItem(CACHE_TIME_KEY, new Date().getTime());
                     
+                    console.log("資料同步成功，筆數：" + masterData.length);
                     showAlert("最新データの同期が完了しました。", "success");
+                } else {
+                    showAlert("警告：サーバーのデータが空です。", "warning");
                 }
             } catch (err) {
-                showAlert("通信エラーが発生しました。", "danger");
+                console.error(err);
+                showAlert("通信エラー：GAS網址是否正確？或是權限未開？", "danger");
             } finally {
                 setSearchEnabled(true);
                 showLoading(false);
             }
         }
 
-        // 搜尋邏輯優化
+        // 搜尋邏輯 (修正型別匹配問題)
         function performSearch(type) {
             const inputId = type === 'normal' ? 'itemCode' : 'shouhinCode';
             const tableId = type === 'normal' ? 'queryResultTable' : 'reverseQueryResultTable';
-            const val = document.getElementById(inputId).value.trim().toLowerCase();
-            if (!val) return;
+            const inputVal = document.getElementById(inputId).value.trim().toLowerCase();
+            
+            if (!inputVal) return;
 
             const tbody = document.querySelector(`#${tableId} tbody`);
             tbody.innerHTML = '';
 
+            // 過濾資料
             const results = masterData.filter(row => {
-                const target = type === 'normal' ? String(row.Item_Code) : String(row.Shouhin_Code);
-                return target.toLowerCase() === val;
+                const target = type === 'normal' ? row.Item_Code : row.Shouhin_Code;
+                return target.toLowerCase() === inputVal;
             });
 
             if (results.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">該当なし</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">該当するデータがありません</td></tr>';
                 return;
             }
 
+            // 繪製表格
             results.forEach(row => {
                 const tr = document.createElement('tr');
                 if (type === 'normal') {
@@ -187,7 +196,7 @@
             });
         }
 
-        // 事件綁定
+        // 按鈕與 Enter 鍵綁定
         document.getElementById("searchBtn").onclick = () => performSearch('normal');
         document.getElementById("reverseSearchBtn").onclick = () => performSearch('reverse');
         document.getElementById("manualUpdateBtn").onclick = () => {
@@ -195,15 +204,16 @@
             refreshAllData();
         };
         
-        // 支援 Enter 鍵
         document.querySelectorAll('.search-input').forEach(input => {
-            input.onkeypress = (e) => { if(e.key === 'Enter') performSearch(input.id === 'itemCode' ? 'normal' : 'reverse') };
+            input.onkeypress = (e) => { 
+                if(e.key === 'Enter') performSearch(input.id === 'itemCode' ? 'normal' : 'reverse');
+            };
         });
 
         // 上傳邏輯
         document.getElementById("uploadBtn").onclick = async () => {
-            const file = document.getElementById("fileInput").files[0];
-            if (!file) return alert("ファイルを選択してください");
+            const fileInput = document.getElementById("fileInput");
+            if (!fileInput.files.length) return alert("ファイルを選択してください");
 
             showLoading(true);
             const reader = new FileReader();
@@ -216,16 +226,17 @@
                     });
                     const json = await res.json();
                     if(json.status === 'success') {
-                        alert("サーバーへ保存されました。同期を開始します。");
+                        alert("アップロード成功！データを更新します。");
+                        localStorage.removeItem(CACHE_KEY);
                         refreshAllData();
+                        fileInput.value = "";
                     }
-                } catch (err) { alert("アップロード失敗"); }
+                } catch (err) { alert("アップロードに失敗しました。"); }
                 finally { showLoading(false); }
             };
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(fileInput.files[0]);
         };
 
-        // UI 輔助函數
         function showAlert(msg, type) {
             const el = document.getElementById("systemAlert");
             el.className = `alert alert-${type} small py-2`;
@@ -243,7 +254,6 @@
         }
 
         function updateVersionDisplay() {
-            // 嘗試從記憶體或快取顯示版本時間
             const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
             if(cachedTime) {
                 const date = new Date(parseInt(cachedTime));
