@@ -3,72 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>轉換主檔管理</title>
+    <title>変換マスタ管理系統</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f8f9fa; } /* 已移除 user-select: none */
-        .copyable { cursor: pointer; color: #0d6efd; text-decoration: underline; transition: 0.2s; }
-        .copyable:hover { color: #0a58ca; background-color: #e9ecef; }
-        .copy-btn { padding: 2px 6px; font-size: 0.75rem; margin-left: 5px; }
-        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); z-index: 9999; justify-content: center; align-items: center; }
-        #systemAlert { display: none; }
+        body { background-color: #f4f7f6; font-family: sans-serif; }
+        .container { max-width: 900px; }
+        /* 點擊複製的樣式 */
+        .copy-cell { 
+            cursor: pointer; 
+            position: relative; 
+            transition: background 0.2s;
+            color: #0d6efd;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+        .copy-cell:hover { background-color: #e9ecef; }
+        .copy-btn { padding: 2px 8px; font-size: 11px; margin-left: 8px; vertical-align: middle; }
+        
+        #systemAlert { display: none; margin-bottom: 15px; }
+        .loading-overlay { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(255,255,255,0.8); z-index: 9999; justify-content: center; align-items: center; 
+        }
+        .table thead { background-color: #eee; }
     </style>
 </head>
 <body>
 
     <div class="loading-overlay" id="loadingOverlay">
-        <div class="spinner-border text-primary" role="status"></div>
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status"></div>
+            <div class="mt-2 fw-bold">處理中...</div>
+        </div>
     </div>
 
     <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-end mb-3 border-bottom pb-2">
-            <h1 class="h4 mb-0">轉換主檔管理系統</h1>
+        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-3">
+            <h2 class="h4 mb-0 text-primary">変換マスタ管理</h2>
             <div class="text-end">
-                <div class="small text-muted">最後更新: <span id="dataVersionText">---</span></div>
-                <button class="btn btn-sm btn-outline-primary mt-1" id="manualUpdateBtn">手動同步資料</button>
+                <div class="small text-muted">Version: <span id="verText" class="fw-bold">---</span></div>
+                <button class="btn btn-sm btn-outline-primary" id="syncBtn">最新データを同期</button>
             </div>
         </div>
 
-        <div id="systemAlert" class="alert small py-2"></div>
+        <div id="systemAlert" class="alert py-2 small"></div>
 
-        <!-- 頁籤 -->
-        <ul class="nav nav-tabs" id="myTab">
-            <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#query">検索</a></li>
-            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#reverse-query">逆検索</a></li>
-            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#upload">系統管理</a></li>
+        <ul class="nav nav-tabs" id="mainTab">
+            <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#searchPane">検索</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#reversePane">逆検索</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#uploadPane">アップロード</a></li>
         </ul>
         
-        <div class="tab-content mt-3">
+        <div class="tab-content mt-3 bg-white p-3 border border-top-0 rounded-bottom shadow-sm">
             <!-- 搜尋 -->
-            <div class="tab-pane fade show active" id="query">
+            <div class="tab-pane fade show active" id="searchPane">
                 <div class="input-group mb-3">
-                    <input type="text" class="form-control search-input" id="itemCode" placeholder="輸入商品代碼...">
+                    <input type="text" class="form-control" id="itemIn" placeholder="商品コードを入力してください (Enter可)">
                     <button class="btn btn-primary" id="searchBtn">検索</button>
                 </div>
-                <table class="table table-bordered table-sm" id="queryResultTable">
-                    <thead class="table-light"><tr><th>問屋コード (點擊複製)</th><th>項目１</th><th>項目２</th></tr></thead>
+                <table class="table table-hover border" id="resTable">
+                    <thead><tr><th>問屋コード (クリックでコピー)</th><th>カラー</th><th>サイズ</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
             
             <!-- 逆搜尋 -->
-            <div class="tab-pane fade" id="reverse-query">
+            <div class="tab-pane fade" id="reversePane">
                 <div class="input-group mb-3">
-                    <input type="text" class="form-control search-input" id="shouhinCode" placeholder="輸入問屋代碼...">
-                    <button class="btn btn-primary" id="reverseSearchBtn">逆検索</button>
+                    <input type="text" class="form-control" id="shouhinIn" placeholder="問屋コードを入力してください (Enter可)">
+                    <button class="btn btn-primary" id="revSearchBtn">逆検索</button>
                 </div>
-                <table class="table table-bordered table-sm" id="reverseQueryResultTable">
-                    <thead class="table-light"><tr><th>商品コード (點擊複製)</th><th>項目１</th><th>項目２</th></tr></thead>
+                <table class="table table-hover border" id="revResTable">
+                    <thead><tr><th>商品コード (クリックでコピー)</th><th>カラー</th><th>サイズ</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
             
             <!-- 上傳 -->
-            <div class="tab-pane fade" id="upload">
-                <div class="card card-body">
-                    <h6>上傳最新 CSV 檔案</h6>
-                    <input type="file" class="form-control mb-2" id="fileInput" accept=".csv">
-                    <button id="uploadBtn" class="btn btn-danger btn-sm">上傳並覆蓋現有資料</button>
+            <div class="tab-pane fade" id="uploadPane">
+                <div class="p-2">
+                    <label class="form-label fw-bold">CSVファイルを選択</label>
+                    <input type="file" class="form-control mb-3" id="fileIn" accept=".csv">
+                    <button id="upBtn" class="btn btn-danger w-100">サーバーへアップロード</button>
                 </div>
             </div>
         </div>
@@ -76,161 +92,135 @@
 
 <script>
     (function() {
-        // --- 設定區 ---
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxnYvUsep_wz4A0uf3V3NWkR1NS_xkFmfxjAr0q6rRl8IMe1SNafAiE2KkwHCgj99AFkQ/exec"; // <--- 請務必貼上正確網址
-        const CACHE_KEY = "MASTER_DATA_CACHE";
-        const CACHE_TIME_KEY = "MASTER_DATA_TIME";
+        // --- 請將你的新部署 URL 填在下方 ---
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwRygD3n_uBbl3jRkNjkIELFePx9n-97h7IMWa-xMyOXp6PTDOszSPoWZBewVMDWHl56g/exec";
         
         let masterData = [];
 
-        window.onload = () => init();
-
-        async function init() {
-            // 檢查是否本地開啟 (保留保護，但允許複製內容)
+        window.onload = () => {
+            // 安全檢查：不允許直接開啟本地檔案
             if (window.location.protocol === 'file:') {
-                alert("安全錯誤：請透過網址訪問，不可直接開啟 HTML 檔案。");
+                document.body.innerHTML = "<div class='container mt-5'><h3>安全錯誤：請使用伺服器網址訪問，不可直接開啟 HTML 檔案。</h3></div>";
                 return;
             }
+            loadFromCache();
+        };
 
-            const cachedData = localStorage.getItem(CACHE_KEY);
-            if (cachedData) {
-                masterData = JSON.parse(cachedData);
-                updateVersionDisplay();
-                showAlert("快取資料載入完成", "secondary");
+        function loadFromCache() {
+            const cached = localStorage.getItem("MASTER_DATA");
+            const time = localStorage.getItem("MASTER_TIME");
+            if (cached) {
+                masterData = JSON.parse(cached);
+                document.getElementById("verText").innerText = new Date(parseInt(time)).toLocaleString();
+                showAlert("快取資料載入成功 (筆數: " + masterData.length + ")", "secondary");
             } else {
-                refreshAllData();
+                syncData();
             }
         }
 
-        async function refreshAllData() {
+        async function syncData() {
             showLoading(true);
             try {
                 const res = await fetch(`${GAS_URL}?action=get_data`);
-                const result = await res.json();
+                const json = await res.json();
                 
-                if (result.error) {
-                    showAlert("錯誤: " + result.error, "danger");
-                    return;
-                }
-
-                if (result.data && result.data.length > 1) {
-                    const rows = result.data.slice(1);
-                    masterData = rows.map(row => ({
-                        shouhin: String(row[0] || "").trim(), // A欄
-                        item:    String(row[1] || "").trim(), // B欄
-                        color:   String(row[2] || "").trim(), // C欄
-                        size:    String(row[3] || "").trim()  // D欄
+                if (json.data && json.data.length > 1) {
+                    const rows = json.data.slice(1);
+                    masterData = rows.map(r => ({
+                        s: String(r[0]||'').trim(), // 問屋 (Shouhin)
+                        i: String(r[1]||'').trim(), // 商品 (Item)
+                        c: String(r[2]||'').trim(), // Color
+                        z: String(r[3]||'').trim()  // Size
                     }));
-
-                    localStorage.setItem(CACHE_KEY, JSON.stringify(masterData));
-                    localStorage.setItem(CACHE_TIME_KEY, new Date().getTime());
-                    showAlert("資料同步成功！共 " + masterData.length + " 筆", "success");
-                    updateVersionDisplay();
+                    localStorage.setItem("MASTER_DATA", JSON.stringify(masterData));
+                    localStorage.setItem("MASTER_TIME", new Date().getTime());
+                    location.reload(); // 重新整理以更新顯示
+                } else if (json.error) {
+                    showAlert("伺服器錯誤: " + json.error, "danger");
                 } else {
-                    showAlert("伺服器資料是空的，請先上傳 CSV", "warning");
+                    showAlert("伺服器上目前沒有資料，請先執行上傳。", "warning");
                 }
-            } catch (err) {
-                showAlert("無法連線至 GAS，請檢查網址或權限", "danger");
+            } catch (e) {
+                showAlert("無法連接到伺服器，請檢查 GAS 網址與部署權限。", "danger");
             } finally {
                 showLoading(false);
             }
         }
 
-        // 搜尋功能
-        function doSearch(isReverse) {
-            const inputId = isReverse ? 'shouhinCode' : 'itemCode';
-            const tableId = isReverse ? 'reverseQueryResultTable' : 'queryResultTable';
-            const val = document.getElementById(inputId).value.trim().toLowerCase();
-            if (!val) return;
-
-            const tbody = document.querySelector(`#${tableId} tbody`);
-            tbody.innerHTML = '';
+        function handleSearch(isRev) {
+            const input = document.getElementById(isRev ? "shouhinIn" : "itemIn").value.trim().toLowerCase();
+            const tbody = document.querySelector(isRev ? "#revResTable tbody" : "#resTable tbody");
+            tbody.innerHTML = "";
+            if (!input) return;
 
             const results = masterData.filter(d => {
-                const target = isReverse ? d.shouhin : d.item;
-                return target.toLowerCase() === val;
+                const target = isRev ? d.s : d.i;
+                return target.toLowerCase() === input;
             });
 
             if (results.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="text-center">無符合資料</td></tr>';
+                tbody.innerHTML = "<tr><td colspan='3' class='text-center text-muted'>一致するデータがありません</td></tr>";
                 return;
             }
 
             results.forEach(d => {
-                const tr = document.createElement('tr');
-                const code = isReverse ? d.item : d.shouhin;
-                
+                const tr = document.createElement("tr");
+                const codeToCopy = isRev ? d.i : d.s;
                 tr.innerHTML = `
-                    <td class="copyable" onclick="copyText('${code}', this)">
-                        ${code}
-                        <button class="btn btn-outline-secondary btn-xs copy-btn" onclick="event.stopPropagation(); copyText('${code}', this.parentElement)">複製</button>
+                    <td class="copy-cell" onclick="copyValue('${codeToCopy}', this)">
+                        ${codeToCopy}
+                        <button class="btn btn-outline-primary btn-xs copy-btn">Copy</button>
                     </td>
-                    <td>${d.color}</td>
-                    <td>${d.size}</td>
+                    <td>${d.c}</td>
+                    <td>${d.z}</td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        // 複製功能
-        window.copyText = function(text, el) {
-            navigator.clipboard.writeText(text).then(() => {
-                const originalText = el.innerHTML;
+        window.copyValue = function(val, el) {
+            navigator.clipboard.writeText(val).then(() => {
+                const originalBg = el.style.backgroundColor;
                 el.style.backgroundColor = "#d1e7dd";
-                setTimeout(() => { el.style.backgroundColor = ""; }, 500);
+                setTimeout(() => el.style.backgroundColor = originalBg, 400);
             });
         };
 
-        // 按鈕綁定
-        document.getElementById("searchBtn").onclick = () => doSearch(false);
-        document.getElementById("reverseSearchBtn").onclick = () => doSearch(true);
-        document.getElementById("manualUpdateBtn").onclick = () => refreshAllData();
-        
-        // Enter 鍵支援
-        document.querySelectorAll('.search-input').forEach(input => {
-            input.onkeypress = (e) => { if(e.key === 'Enter') doSearch(input.id === 'shouhinCode') };
-        });
+        // 綁定事件
+        document.getElementById("searchBtn").onclick = () => handleSearch(false);
+        document.getElementById("revSearchBtn").onclick = () => handleSearch(true);
+        document.getElementById("syncBtn").onclick = () => syncData();
+        document.getElementById("itemIn").onkeypress = (e) => { if(e.key==='Enter') handleSearch(false) };
+        document.getElementById("shouhinIn").onkeypress = (e) => { if(e.key==='Enter') handleSearch(true) };
 
         // 上傳功能
-        document.getElementById("uploadBtn").onclick = async () => {
-            const file = document.getElementById("fileInput").files[0];
-            if (!file) return alert("請選擇檔案");
-
+        document.getElementById("upBtn").onclick = async () => {
+            const file = document.getElementById("fileIn").files[0];
+            if (!file) return alert("請選擇 CSV 檔案");
             showLoading(true);
             const reader = new FileReader();
             reader.onload = async (e) => {
-                const base64Data = e.target.result.split(',')[1];
+                const b64 = e.target.result.split(',')[1];
                 try {
-                    const res = await fetch(GAS_URL, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: 'upload', data: base64Data })
-                    });
-                    const json = await res.json();
-                    if(json.status === 'success') {
-                        alert("上傳成功！");
-                        refreshAllData();
-                    }
-                } catch (err) { alert("上傳失敗"); }
+                    const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'upload', data: b64 }) });
+                    const resJson = await res.json();
+                    if(resJson.status === 'success') {
+                        alert("上傳成功！系統將自動重新同步。");
+                        syncData();
+                    } else { alert("上傳失敗: " + resJson.message); }
+                } catch (err) { alert("連線錯誤"); }
                 finally { showLoading(false); }
             };
             reader.readAsDataURL(file);
         };
 
-        function showAlert(msg, type) {
-            const el = document.getElementById("systemAlert");
-            el.className = `alert alert-${type} small py-2`;
-            el.innerText = msg;
-            el.style.display = "block";
+        function showAlert(m, type) {
+            const a = document.getElementById("systemAlert");
+            a.className = `alert alert-${type} py-2 small`;
+            a.innerText = m;
+            a.style.display = "block";
         }
-
-        function showLoading(show) {
-            document.getElementById("loadingOverlay").style.display = show ? "flex" : "none";
-        }
-
-        function updateVersionDisplay() {
-            const time = localStorage.getItem(CACHE_TIME_KEY);
-            if(time) document.getElementById("dataVersionText").innerText = new Date(parseInt(time)).toLocaleString();
-        }
+        function showLoading(s) { document.getElementById("loadingOverlay").style.display = s ? "flex" : "none"; }
     })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
