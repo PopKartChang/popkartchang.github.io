@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>変換マスタ - 管理系統</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root { --primary-color: #2c3e50; }
+        body { background-color: #f8f9fa; user-select: none; /* 防止選取 */ }
+        #systemAlert { display: none; transition: all 0.3s; }
+        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; justify-content: center; align-items: center; }
+    </style>
+</head>
+<body oncontextmenu="return false;"> <!-- 禁用右鍵 -->
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-end mb-3 border-bottom pb-2">
+            <h1 class="h3 mb-0">変換マスタの管理</h1>
+            <div class="text-end">
+                <div class="small text-muted mb-1">Version: <span id="dataVersionText" class="fw-bold">---</span></div>
+                <button class="btn btn-sm btn-outline-primary" id="manualUpdateBtn">
+                    同期更新
+                </button>
+            </div>
+        </div>
+
+        <div id="systemAlert" class="alert small py-2"></div>
+
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#query">検索</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#reverse-query">逆検索</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#upload">管理</a></li>
+        </ul>
+        
+        <div class="tab-content mt-4">
+            <!-- 搜尋面板 -->
+            <div class="tab-pane fade show active" id="query">
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control search-input" id="itemCode" placeholder="商品コードを入力 (Enterで検索)">
+                    <button class="btn btn-primary search-input" id="searchBtn">検索</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm" id="queryResultTable">
+                        <thead class="table-light"><tr><th>問屋コード</th><th>項目１</th><th>項目２</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 逆搜尋面板 -->
+            <div class="tab-pane fade" id="reverse-query">
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control search-input" id="shouhinCode" placeholder="問屋コードを入力">
+                    <button class="btn btn-primary search-input" id="reverseSearchBtn">逆検索</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm" id="reverseQueryResultTable">
+                        <thead class="table-light"><tr><th>商品コード</th><th>項目１</th><th>項目２</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 上傳面板 -->
+            <div class="tab-pane fade" id="upload">
+                <div class="card card-body shadow-sm">
+                    <h5>CSVアップロード</h5>
+                    <input type="file" class="form-control mb-2" id="fileInput" accept=".csv">
+                    <button id="uploadBtn" class="btn btn-danger">サーバーへ保存</button>
+                    <div id="uploadStatus" class="small mt-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    /**
+     * 安全保護與核心邏輯
+     */
+    (function() {
+        // 1. 環境安全偵測：防止下載後本地開啟
+        if (window.location.protocol === 'file:') {
+            //document.body.innerHTML = '<h1 style="text-align:center; margin-top:100px;">Access Denied (Security Error)</h1>';
+            return;
+        }
+
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzhbDP58G1-H0973CuY7z_f4DZ09qOQpIKoZuNwUO8adjlxPwt_R7VYUhHDsFh3euDqvw/exec"; // <--- 請填入你的部署網址
+        const CACHE_KEY = "MASTER_DATA_CACHE";
+        const CACHE_TIME_KEY = "MASTER_DATA_TIME";
+        const EXPIRE_MS = 12 * 60 * 60 * 1000; // 12小時過期
+
+        let masterData = [];
+
+        // 初始化
+        window.onload = () => init();
+
+        async function init() {
+            // 禁止鍵盤 F12 和 Ctrl+S
+            document.onkeydown = e => {
+                if (e.keyCode == 123 || (e.ctrlKey && e.keyCode == 83)) return false;
+            };
+
+            const cachedData = localStorage.getItem(CACHE_KEY);
+            const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+            const now = new Date().getTime();
+
+            if (cachedData && cachedTime && (now - cachedTime < EXPIRE_MS)) {
+                masterData = JSON.parse(cachedData);
+                showAlert("キャッシュからデータを読み込みました。", "secondary");
+                setSearchEnabled(true);
+                updateVersionDisplay();
+            } else {
+                refreshAllData();
+            }
+        }
+
+        async function refreshAllData() {
+            setSearchEnabled(false);
+            showLoading(true);
+            try {
+                // 取得時間
+                const statusRes = await fetch(`${GAS_URL}?action=get_status`);
+                const statusData = await statusRes.json();
+                document.getElementById("dataVersionText").innerText = statusData.time;
+
+                // 取得資料
+                const dataRes = await fetch(`${GAS_URL}?action=get_data`);
+                const result = await dataRes.json();
+                
+                if (result.data) {
+                    // 轉換成物件格式 (第一行為 Header)
+                    const headers = result.data[0];
+                    const rows = result.data.slice(1);
+                    masterData = rows.map(row => {
+                        let obj = {};
+                        headers.forEach((h, i) => obj[h] = row[i]);
+                        return obj;
+                    });
+
+                    // 存入快取
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(masterData));
+                    localStorage.setItem(CACHE_TIME_KEY, new Date().getTime());
+                    
+                    showAlert("最新データの同期が完了しました。", "success");
+                }
+            } catch (err) {
+                showAlert("通信エラーが発生しました。", "danger");
+            } finally {
+                setSearchEnabled(true);
+                showLoading(false);
+            }
+        }
+
+        // 搜尋邏輯優化
+        function performSearch(type) {
+            const inputId = type === 'normal' ? 'itemCode' : 'shouhinCode';
+            const tableId = type === 'normal' ? 'queryResultTable' : 'reverseQueryResultTable';
+            const val = document.getElementById(inputId).value.trim().toLowerCase();
+            if (!val) return;
+
+            const tbody = document.querySelector(`#${tableId} tbody`);
+            tbody.innerHTML = '';
+
+            const results = masterData.filter(row => {
+                const target = type === 'normal' ? String(row.Item_Code) : String(row.Shouhin_Code);
+                return target.toLowerCase() === val;
+            });
+
+            if (results.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">該当なし</td></tr>';
+                return;
+            }
+
+            results.forEach(row => {
+                const tr = document.createElement('tr');
+                if (type === 'normal') {
+                    tr.innerHTML = `<td>${row.Shouhin_Code}</td><td>${row.Color_Name}</td><td>${row.Size_Name}</td>`;
+                } else {
+                    tr.innerHTML = `<td>${row.Item_Code}</td><td>${row.Color_Name}</td><td>${row.Size_Name}</td>`;
+                }
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 事件綁定
+        document.getElementById("searchBtn").onclick = () => performSearch('normal');
+        document.getElementById("reverseSearchBtn").onclick = () => performSearch('reverse');
+        document.getElementById("manualUpdateBtn").onclick = () => {
+            localStorage.removeItem(CACHE_KEY);
+            refreshAllData();
+        };
+        
+        // 支援 Enter 鍵
+        document.querySelectorAll('.search-input').forEach(input => {
+            input.onkeypress = (e) => { if(e.key === 'Enter') performSearch(input.id === 'itemCode' ? 'normal' : 'reverse') };
+        });
+
+        // 上傳邏輯
+        document.getElementById("uploadBtn").onclick = async () => {
+            const file = document.getElementById("fileInput").files[0];
+            if (!file) return alert("ファイルを選択してください");
+
+            showLoading(true);
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const base64Data = e.target.result.split(',')[1];
+                try {
+                    const res = await fetch(GAS_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'upload', data: base64Data })
+                    });
+                    const json = await res.json();
+                    if(json.status === 'success') {
+                        alert("サーバーへ保存されました。同期を開始します。");
+                        refreshAllData();
+                    }
+                } catch (err) { alert("アップロード失敗"); }
+                finally { showLoading(false); }
+            };
+            reader.readAsDataURL(file);
+        };
+
+        // UI 輔助函數
+        function showAlert(msg, type) {
+            const el = document.getElementById("systemAlert");
+            el.className = `alert alert-${type} small py-2`;
+            el.innerText = msg;
+            el.style.display = "block";
+            if(type === 'success' || type === 'secondary') setTimeout(() => el.style.display="none", 3000);
+        }
+
+        function showLoading(show) {
+            document.getElementById("loadingOverlay").style.display = show ? "flex" : "none";
+        }
+
+        function setSearchEnabled(enabled) {
+            document.querySelectorAll('.search-input').forEach(el => el.disabled = !enabled);
+        }
+
+        function updateVersionDisplay() {
+            // 嘗試從記憶體或快取顯示版本時間
+            const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+            if(cachedTime) {
+                const date = new Date(parseInt(cachedTime));
+                document.getElementById("dataVersionText").innerText = date.toLocaleString();
+            }
+        }
+    })();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
