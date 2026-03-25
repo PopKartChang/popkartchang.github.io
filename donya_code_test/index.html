@@ -3,101 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>商品コード 変換システム</title>
-    <!-- 使用較大的字體設定 -->
+    <title>変換マスタ管理システム</title>
+    <!-- Bootstrap 5 & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root { --accent-color: #224abe; --bg-color: #ffffff; --copy-btn-color: #198754; }
+        :root { 
+            --accent-color: #4e73df; 
+            --success-bg: #d1e7dd;
+            --bg-color: #f0f2f5; 
+        }
         body { 
             font-family: 'Noto Sans JP', sans-serif; 
-            background-color: #f0f2f5; 
-            color: #212529; 
-            margin: 0;
-            font-size: 1.2rem; /* 整體字體加大 */
+            background-color: var(--bg-color); 
+            color: #333; 
             user-select: auto !important;
         }
         
-        /* 標頭：更醒目 */
+        /* 頁首：專業感漸層 */
         .main-header {
-            background: #224abe;
-            color: white; padding: 2rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+            color: white; padding: 2rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.15);
         }
-        .status-panel {
-            background: rgba(0,0,0,0.2); border-radius: 10px;
-            padding: 15px; font-size: 1rem; line-height: 1.6;
+        .status-card {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px; padding: 15px; font-size: 0.85rem; backdrop-filter: blur(10px);
         }
+        .status-item { margin-bottom: 4px; display: flex; justify-content: space-between; gap: 20px; }
+        .status-label { opacity: 0.8; font-weight: normal; }
         
-        /* 卡片設計 */
+        /* 卡片容器 */
         .content-card {
-            background: white; border-radius: 20px; border: 2px solid #dee2e6;
+            background: white; border-radius: 20px; border: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
             padding: 2rem; margin-bottom: 2rem;
         }
 
-        /* 選單：大按鈕化 */
+        /* 導覽按鈕美化 */
         .nav-pills .nav-link { 
-            font-size: 1.3rem; font-weight: bold; padding: 15px;
-            border: 2px solid #dee2e6; margin-bottom: 10px; border-radius: 12px;
-            background: white; color: #444;
+            color: #4e73df; font-weight: 600; border-radius: 12px; 
+            padding: 12px 20px; margin-bottom: 10px; border: 1px solid transparent;
+            transition: all 0.2s ease;
         }
-        .nav-pills .nav-link.active { background-color: #224abe; color: white; border-color: #224abe; }
-
-        /* 輸入框：特大號 */
-        .form-control { 
-            font-size: 1.5rem; border-radius: 12px; border: 3px solid #ced4da; padding: 1rem;
-            user-select: text !important;
+        .nav-pills .nav-link:hover { background-color: #f8f9fc; border-color: #e3e6f0; }
+        .nav-pills .nav-link.active { 
+            background-color: var(--accent-color); color: white;
+            box-shadow: 0 8px 15px rgba(78,115,223,0.25);
         }
-        .form-control:focus { border-color: #224abe; box-shadow: 0 0 0 0.3rem rgba(34,74,190,0.2); }
 
-        /* 搜尋按鈕：特大號 */
-        .btn-search { font-size: 1.5rem; font-weight: bold; padding: 1rem 2rem; border-radius: 12px; }
-
-        /* 表格優化 */
-        .table { font-size: 1.3rem; border-collapse: separate; border-spacing: 0 10px; }
-        .table thead th { border: none; color: #666; font-size: 1.1rem; }
-        .table tbody tr { background: #f8f9fa; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .table td { padding: 20px !important; border: none; vertical-align: middle; }
-        .table td:first-child { border-radius: 12px 0 0 12px; }
-        .table td:last-child { border-radius: 0 12px 12px 0; }
-
-        /* 複製按鈕：老人家最需要的明確按鈕 */
-        .btn-copy-main {
-            font-size: 1.1rem; font-weight: bold; padding: 10px 20px;
-            border-radius: 10px; background-color: var(--copy-btn-color); color: white;
-            border: none; cursor: pointer; transition: 0.2s; width: 100%;
+        /* 輸入框修復與加強 */
+        .search-group { position: relative; }
+        .form-control-lg { 
+            border-radius: 15px; border: 2px solid #e3e6f0; padding: 1rem 1.25rem;
+            font-size: 1.1rem; user-select: text !important;
         }
-        .btn-copy-main:active { transform: scale(0.95); }
-        
-        .code-text {
-            color: #224abe; font-weight: bold; cursor: pointer; text-decoration: underline;
-            display: block; margin-bottom: 5px; font-size: 1.5rem;
+        .form-control-lg:focus { border-color: #bac8f3; box-shadow: none; }
+
+        /* 表格設計 */
+        .table-custom { border-radius: 15px; overflow: hidden; border: 1px solid #eee; }
+        .table-custom thead { background-color: #f8f9fc; border-bottom: 2px solid #e3e6f0; }
+        .table-custom th { color: #4e73df; font-weight: 700; padding: 15px; }
+        .table-custom td { padding: 15px; vertical-align: middle; transition: background 0.3s; }
+
+        /* 複製區塊 */
+        .copy-wrapper { display: flex; align-items: center; gap: 10px; }
+        .code-text { 
+            font-family: 'Courier New', Courier, monospace; font-size: 1.2rem; font-weight: 700;
+            color: #333; cursor: pointer; text-decoration: underline dotted #ccc;
         }
-        
-        /* 載入畫面 */
+        .btn-copy-action { 
+            border-radius: 8px; font-weight: bold; font-size: 0.8rem;
+            padding: 6px 12px; white-space: nowrap;
+        }
+
+        /* 複製後的成功特效 */
+        .row-copied { background-color: var(--success-bg) !important; }
+
+        /* 載入遮罩 */
         .sync-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.95); z-index: 9999;
+            background: rgba(255,255,255,0.9); z-index: 9999;
             flex-direction: column; justify-content: center; align-items: center;
         }
-        .sync-overlay h2 { font-size: 2rem; color: #224abe; margin-top: 20px; }
+        .expiry-text { color: #f6c23e; font-weight: bold; }
+        .expired { color: #e74a3b; }
     </style>
 </head>
 <body>
 
+<!-- 同步中遮罩 -->
 <div class="sync-overlay" id="syncOverlay">
-    <div class="spinner-border text-primary" style="width: 5rem; height: 5rem; border-width: .5em;"></div>
-    <h2>データを更新しています...</h2>
-    <p>そのまま 10秒ほど お待ちください</p>
+    <div class="spinner-border text-primary" style="width: 3.5rem; height: 3.5rem; border-width: 0.25rem;"></div>
+    <div class="mt-4 h5 fw-bold text-primary" id="syncStatusText">最新データを読み込んでいます...</div>
 </div>
 
-<header class="main-header mb-4 text-center">
+<header class="main-header mb-5">
     <div class="container">
-        <h1 class="fw-bold mb-2" style="font-size: 2.5rem;">商品コード 変換システム</h1>
-        <div class="d-flex justify-content-center">
-            <div class="status-panel text-start">
-                <div>● データの同期：<span id="txtLocalTime">---</span></div>
-                <div>● 本部の更新：<span id="txtServerTime">---</span></div>
-                <div>● 次回の更新まで：<span id="txtExpiry" class="fw-bold text-warning">---</span></div>
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <h1 class="display-6 fw-bold mb-1">変換マスタ管理</h1>
+                <p class="mb-0 opacity-75">商品コードと問屋コードを紐付け・検索します</p>
+            </div>
+            <div class="col-lg-5 text-lg-end mt-4 mt-lg-0">
+                <div class="status-card d-inline-block text-start">
+                    <div class="status-item">
+                        <span class="status-label">本機同期：</span>
+                        <span id="txtLocalTime">---</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">サーバー：</span>
+                        <span id="txtServerTime">---</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">有効期限：</span>
+                        <span id="txtExpiry" class="expiry-text">---</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -106,78 +127,118 @@
 <div class="container pb-5">
     <div class="row">
         <!-- 功能選單 -->
-        <div class="col-lg-3">
-            <div class="nav flex-column nav-pills" role="tablist">
-                <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#paneSearch">🔍 商品コードで探す</button>
-                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#paneRevSearch">🔍 問屋コードで探す</button>
-                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#paneUpload" onclick="checkServerUpdate()">⚙ データの管理</button>
-                <button class="btn btn-dark btn-lg mt-4 py-3 fw-bold" id="btnManualSync">🔄 今すぐ最新にする</button>
+        <div class="col-lg-3 mb-4">
+            <div class="content-card shadow-sm p-3">
+                <div class="nav flex-column nav-pills" role="tablist">
+                    <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#paneSearch">🔍 商品コード検索</button>
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#paneRevSearch">🔄 問屋コード検索</button>
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#paneUpload" onclick="checkServerUpdate()">⚙️ マスタ管理</button>
+                    <hr class="my-3">
+                    <button class="btn btn-outline-primary w-100 py-2 fw-bold" id="btnManualSync">データを今すぐ更新</button>
+                </div>
             </div>
         </div>
 
-        <!-- 內容區 -->
+        <!-- 內容區域 -->
         <div class="col-lg-9">
             <div class="tab-content">
+                
                 <!-- 商品搜尋 -->
                 <div class="tab-pane fade show active" id="paneSearch">
                     <div class="content-card">
-                        <h3 class="fw-bold mb-4">商品コードを入力してください</h3>
-                        <div class="mb-4">
-                            <input type="text" class="form-control mb-3" id="inItemCode" placeholder="例: ITEM123" inputmode="text">
-                            <button class="btn btn-primary w-100 btn-search" id="btnExecSearch">この番号で検索する</button>
+                        <h4 class="fw-bold mb-4">商品コードから検索</h4>
+                        <div class="input-group input-group-lg mb-5 search-group">
+                            <input type="text" class="form-control form-control-lg" id="inItemCode" placeholder="例: ABC-123" inputmode="text">
+                            <button class="btn btn-primary px-5 fw-bold" id="btnExecSearch">検索する</button>
                         </div>
-                        <hr>
-                        <table class="table" id="resTable">
-                            <thead><tr><th style="width: 50%;">変換後の番号</th><th>カラー / サイズ</th></tr></thead>
-                            <tbody></tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="table table-custom align-middle" id="resTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 45%;">問屋コード</th>
+                                        <th>カラー</th>
+                                        <th>サイズ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td colspan="3" class="text-center py-5 text-muted">キーワードを入力して検索してください</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
                 <!-- 逆搜尋 -->
                 <div class="tab-pane fade" id="paneRevSearch">
                     <div class="content-card">
-                        <h3 class="fw-bold mb-4">問屋コードを入力してください</h3>
-                        <div class="mb-4">
-                            <input type="text" class="form-control mb-3" id="inShouhinCode" placeholder="例: TOI456" inputmode="text">
-                            <button class="btn btn-primary w-100 btn-search" id="btnExecRevSearch">この番号で検索する</button>
+                        <h4 class="fw-bold mb-4">問屋コードから検索 (逆引き)</h4>
+                        <div class="input-group input-group-lg mb-5 search-group">
+                            <input type="text" class="form-control form-control-lg" id="inShouhinCode" placeholder="例: TOI-001" inputmode="text">
+                            <button class="btn btn-primary px-5 fw-bold" id="btnExecRevSearch">検索する</button>
                         </div>
-                        <hr>
-                        <table class="table" id="revResTable">
-                            <thead><tr><th style="width: 50%;">変換後の番号</th><th>カラー / サイズ</th></tr></thead>
-                            <tbody></tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="table table-custom align-middle" id="revResTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 45%;">商品コード</th>
+                                        <th>カラー</th>
+                                        <th>サイズ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td colspan="3" class="text-center py-5 text-muted">キーワードを入力して検索してください</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 上傳 -->
+                <!-- 管理上傳 -->
                 <div class="tab-pane fade" id="paneUpload">
-                    <div class="content-card">
-                        <h3 class="fw-bold mb-4">マスタデータの更新</h3>
-                        <div class="p-4 mb-4 bg-light rounded-4 border">
-                            <p class="mb-1">本部から受け取ったCSVファイルを選択してください。</p>
-                            <p class="fw-bold text-danger">本部側の最終更新：<span id="txtServerStatus">---</span></p>
+                    <div class="content-card border-top border-danger border-5">
+                        <h4 class="fw-bold mb-3 text-danger">マスタデータの更新</h4>
+                        <div class="alert alert-warning border-0 shadow-sm mb-4">
+                            <h6 class="fw-bold">⚠️ 注意事項</h6>
+                            <ul class="small mb-0">
+                                <li>CSVファイルをアップロードすると、現在のデータは全て上書きされます。</li>
+                                <li>構成: A列(問屋コード), B列(商品コード), C列(カラー), D列(サイズ)</li>
+                                <li>サーバー側の最終更新：<span id="txtServerStatus" class="fw-bold">確認中...</span></li>
+                            </ul>
                         </div>
-                        <input type="file" id="filePicker" class="form-control mb-4" accept=".csv">
-                        <button class="btn btn-danger btn-lg w-100 py-3 fw-bold" id="btnUpload">新しいデータに書き換える</button>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">CSVファイルを選択</label>
+                            <input type="file" id="filePicker" class="form-control form-control-lg" accept=".csv">
+                        </div>
+                        <button class="btn btn-danger w-100 fw-bold py-3 shadow" id="btnUpload">サーバーのデータを更新する</button>
                     </div>
                 </div>
+
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- 複製成功的 Toast 通知 -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="toastCopy" class="toast align-items-center text-white bg-dark border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body fs-6 fw-bold">✅ コピーしました</div>
         </div>
     </div>
 </div>
 
 <script>
 (function() {
+    // === 設定 ===
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwce3KuVDjreoFrFXC3kP3AbqkuV-RgmWjQSSsiweD689KdnOuGeqxFkF5M3HfOG7eR/exec";
     const EXPIRE_MIN = 240; 
     
     let masterData = [];
-    let timer = null;
+    let countdownTimer = null;
 
     window.onload = () => {
         if (window.location.protocol === 'file:') {
-            alert("エラー: サーバーを通してアクセスしてください。");
+            alert("Security Error: Webサーバー経由で開いてください。");
             return;
         }
         init();
@@ -190,12 +251,14 @@
         if (cached && lastSync) {
             const now = new Date().getTime();
             const elapsed = (now - parseInt(lastSync)) / 60000;
+
             if (elapsed > EXPIRE_MIN) {
                 await syncData();
             } else {
                 masterData = JSON.parse(cached);
                 refreshUI();
                 startCountdown(parseInt(lastSync));
+                checkServerUpdate(); 
             }
         } else {
             await syncData();
@@ -203,20 +266,22 @@
     }
 
     async function syncData() {
-        toggleOverlay(true);
+        toggleOverlay(true, "サーバーから最新のデータを取得しています...");
         try {
             const res = await fetch(`${GAS_URL}?action=get_data`);
             const json = await res.json();
             if (json.data) {
                 const rows = json.data.slice(1);
                 const processed = rows.map(r => ({ s: String(r[0]||''), i: String(r[1]||''), c: String(r[2]||''), z: String(r[3]||'') }));
+                
                 localStorage.setItem("APP_DATA", JSON.stringify(processed));
                 localStorage.setItem("LAST_SYNC_TS", new Date().getTime());
                 localStorage.setItem("SERVER_TS", json.serverTime || '---');
-                location.reload();
+                
+                location.reload(); 
             }
         } catch (e) {
-            alert("通信エラー：インターネットを確認してください");
+            alert("同期に失敗しました。インターネット接続を確認してください。");
             toggleOverlay(false);
         }
     }
@@ -236,12 +301,13 @@
         const query = document.getElementById(inputId).value.trim().toLowerCase();
         const tbody = document.querySelector(`#${tableId} tbody`);
         
-        tbody.innerHTML = "";
         if(!query) return;
 
+        tbody.innerHTML = "";
         const results = masterData.filter(d => (isRev ? d.s : d.i).toLowerCase() === query);
+        
         if(results.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="2" class="text-center py-5 text-muted">該当なし。番号が正しいか確認してください。</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-5 text-muted h6">該当するデータが見つかりませんでした</td></tr>';
             return;
         }
 
@@ -250,41 +316,38 @@
             const val = isRev ? d.i : d.s;
             tr.innerHTML = `
                 <td>
-                    <span class="code-text" onclick="copy('${val}', this)">${val}</span>
-                    <button class="btn-copy-main" onclick="copy('${val}', this)">
-                        この番号をコピーする
-                    </button>
+                    <div class="copy-wrapper">
+                        <span class="code-text" onclick="copyValue('${val}', this)">${val}</span>
+                        <button class="btn btn-outline-primary btn-sm btn-copy-action" onclick="copyValue('${val}', this)">コピー</button>
+                    </div>
                 </td>
-                <td>
-                    <div class="fw-bold">${d.c}</div>
-                    <div class="text-muted small">${d.z}</div>
-                </td>`;
+                <td><span class="badge bg-light text-dark p-2">${d.c}</span></td>
+                <td><span class="badge bg-light text-dark p-2">${d.z}</span></td>
+            `;
             tbody.appendChild(tr);
         });
     }
 
-    window.copy = (txt, btn) => {
+    window.copyValue = (txt, element) => {
         navigator.clipboard.writeText(txt).then(() => {
-            const oldText = btn.innerText;
-            if(btn.tagName === "BUTTON") {
-                btn.innerText = "✅ コピー完了！";
-                btn.style.backgroundColor = "#000";
-                setTimeout(() => {
-                    btn.innerText = oldText;
-                    btn.style.backgroundColor = "";
-                }, 2000);
-            } else {
-                alert("コピーしました: " + txt);
-            }
+            // Toast 通知
+            const t = new bootstrap.Toast(document.getElementById('toastCopy'));
+            t.show();
+
+            // 視覺回饋：整列變色
+            const row = element.closest('tr');
+            row.classList.add('row-copied');
+            setTimeout(() => row.classList.remove('row-copied'), 600);
         });
     };
 
     document.getElementById("btnUpload").onclick = async () => {
         const file = document.getElementById("filePicker").files[0];
-        if (!file) return alert("ファイルを選んでください");
-        if (!confirm("データを書き換えてもよろしいですか？")) return;
+        if (!file) return alert("CSVファイルを選択してください");
+        
+        if(!confirm("サーバーのデータを上書きします。よろしいですか？")) return;
 
-        toggleOverlay(true);
+        toggleOverlay(true, "サーバーへ送信中...");
         const reader = new FileReader();
         reader.onload = async (e) => {
             const b64 = e.target.result.split(',')[1];
@@ -292,26 +355,32 @@
                 const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'upload', data: b64 }) });
                 const resJson = await res.json();
                 if(resJson.status === 'success') {
-                    alert("更新に成功しました！");
+                    alert("アップロードが完了しました。最新データを同期します。");
                     await syncData();
                 }
-            } catch (err) { alert("更新に失敗しました"); toggleOverlay(false); }
+            } catch (err) { 
+                alert("エラーが発生しました。"); 
+                toggleOverlay(false); 
+            }
         };
         reader.readAsDataURL(file);
     };
 
     function startCountdown(syncTs) {
-        if(timer) clearInterval(timer);
-        timer = setInterval(() => {
+        if(countdownTimer) clearInterval(countdownTimer);
+        countdownTimer = setInterval(() => {
             const now = new Date().getTime();
             const remainMs = (EXPIRE_MIN * 60000) - (now - syncTs);
             const el = document.getElementById("txtExpiry");
             if (remainMs <= 0) {
-                el.innerText = "更新の時間です";
+                el.innerText = "期限切れ：自動更新中...";
+                el.classList.add('expired');
+                clearInterval(countdownTimer);
                 syncData();
             } else {
                 const m = Math.floor(remainMs / 60000);
-                el.innerText = `あと ${m} 分`;
+                const s = Math.floor((remainMs % 60000) / 1000);
+                el.innerText = `${m}分 ${s}秒`;
             }
         }, 1000);
     }
@@ -319,30 +388,26 @@
     function refreshUI() {
         const local = localStorage.getItem("LAST_SYNC_TS");
         const server = localStorage.getItem("SERVER_TS");
-        if(local) document.getElementById("txtLocalTime").innerText = new Date(parseInt(local)).toLocaleString();
-        if(server) document.getElementById("txtServerTime").innerText = server;
+        if(local) document.getElementById("txtLocalTime").innerText = new Date(parseInt(local)).toLocaleString('ja-JP');
+        if(server) {
+            document.getElementById("txtServerTime").innerText = server;
+            document.getElementById("txtServerStatus").innerText = server;
+        }
     }
 
-    function toggleOverlay(show) {
-        document.getElementById("syncOverlay").style.display = show ? "flex" : "none";
+    function toggleOverlay(show, text) {
+        const o = document.getElementById("syncOverlay");
+        if(text) document.getElementById("syncStatusText").innerText = text;
+        o.style.display = show ? "flex" : "none";
     }
 
-    // 事件綁定
+    // 事件監聽 (正確綁定，確保打字順暢)
     document.getElementById("btnExecSearch").addEventListener('click', () => search(false));
     document.getElementById("btnExecRevSearch").addEventListener('click', () => search(true));
     document.getElementById("btnManualSync").addEventListener('click', () => syncData());
     
-    // 解決鍵盤問題
-    const inputHandler = (isRev) => (e) => {
-        if (e.key === 'Enter') search(isRev);
-    };
-    document.getElementById("inItemCode").addEventListener('keydown', inputHandler(false));
-    document.getElementById("inShouhinCode").addEventListener('keydown', inputHandler(true));
-    
-    // 自動選取輸入內容（方便老人家更換輸入）
-    document.querySelectorAll('.form-control').forEach(el => {
-        el.addEventListener('focus', () => el.select());
-    });
+    document.getElementById("inItemCode").addEventListener('keydown', (e) => { if(e.key === 'Enter') search(false); });
+    document.getElementById("inShouhinCode").addEventListener('keydown', (e) => { if(e.key === 'Enter') search(true); });
 
 })();
 </script>
