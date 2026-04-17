@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KP RUN: 賽博台北 2024</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+    <div id="game-container"></div>
+    
+    <div id="hud">
+        <div class="top-info">
+            <div class="stat-box">
+                <div class="label">POLITICAL FUND</div>
+                <div id="score-val">000000</div>
+            </div>
+            <div class="stat-box right">
+                <div class="label">JUDICIAL STATUS</div>
+                <div id="trial-text">一審審理中</div>
+            </div>
+        </div>
+        <div class="health-container">
+            <div id="health-bar"></div>
+        </div>
+        <div id="popup-text"></div>
+    </div>
+
+    <div id="ui-screen" class="screen active">
+        <div class="cyber-panel">
+            <h1 class="glitch-text">KP RUN<br><span>THE FINAL APPEAL</span></h1>
+            <p id="subtitle">「這國家已經瘋了，但我還沒放棄。」</p>
+            
+            <div id="game-over-info" style="display:none;">
+                <h2 id="result-title">三審定讞：送土城</h2>
+                <div id="final-score-display">政治獻金：0</div>
+                <p id="game-over-quote"></p>
+            </div>
+            
+            <button id="action-btn">開始騎行 (ENTER)</button>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module" src="./js/main.js"></script>
+</body>
+</html>

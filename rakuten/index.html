@@ -1,134 +1,382 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>販売価格計算</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-  }
-  .container {
-    max-width: 400px;
-    margin: 0 auto;
-    padding: 20px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-  }
-  label {
-    display: block;
-    margin-bottom: 5px;
-  }
-  input[type="number"] {
-    width: 100%;
-    padding: 8px;
-    margin-bottom: 10px;
-    box-sizing: border-box;
-  }
-  input[type="checkbox"] {
-    margin-right: 10px;
-  }
-  button {
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  button:hover {
-    background-color: #0056b3;
-  }
-  #result {
-    margin-top: 20px;
-    font-weight: bold;
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>販売価格計算　2026</title>
+  <style>
+    :root {
+      --rakuten-red: #bf0000;
+      --navy: #1a2a3a;
+      --bg-color: #f0f4f8;
+      --card-bg: #ffffff;
+      --border-color: #dce1e6;
+      --green: #2b8a3e;
+      --yellow: #f59f00;
+      --red: #e03131;
+    }
+
+    body {
+      font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+      background-color: var(--bg-color);
+      color: #333;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+      margin: 0;
+    }
+
+    .container {
+      max-width: 680px; /* 加寬避免斷行 */
+      width: 100%;
+      background: var(--card-bg);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    h2 { text-align: center; color: var(--rakuten-red); margin-top: 0; margin-bottom: 5px; letter-spacing: 1px; }
+    .subtitle { text-align: center; font-size: 0.85rem; color: #666; margin-bottom: 20px; }
+
+    .mode-header {
+      text-align: center; font-size: 1rem; font-weight: bold; padding: 12px;
+      background: #e9ecef; border-radius: 6px; margin-bottom: 20px; letter-spacing: 0.5px;
+    }
+
+    .toggle-btn {
+      width: 100%; padding: 14px; background: var(--navy); color: #fff;
+      border: none; border-radius: 8px; cursor: pointer; margin-bottom: 20px; 
+      font-weight: bold; font-size: 0.95rem; transition: background 0.2s;
+    }
+    .toggle-btn:hover { background: #111d28; }
+
+    .section-title {
+      font-size: 1.05rem; border-left: 4px solid var(--rakuten-red);
+      padding-left: 10px; margin: 25px 0 15px 0; font-weight: bold; color: var(--navy);
+    }
+
+    .flex-row { display: flex; gap: 15px; align-items: center; margin-bottom: 10px; }
+    .flex-col { flex: 1; }
+    
+    label { font-weight: bold; font-size: 0.85rem; display: block; margin-bottom: 6px; color: #555; white-space: nowrap; }
+    
+    .input-wrapper { display: flex; align-items: center; }
+    input[type="number"] {
+      width: 100%; padding: 10px; border: 1px solid var(--border-color);
+      border-radius: 6px; font-size: 1rem; color: #222;
+    }
+    input[type="number"]:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 2px rgba(26,42,58,0.1); }
+    .unit { margin-left: 8px; font-weight: bold; width: 35px; color: #555; }
+
+    .checkbox-item { 
+      display: flex; align-items: center; margin-bottom: 12px; 
+      font-size: 0.9rem; background: #f8f9fa; padding: 10px 15px; border-radius: 6px; border: 1px dashed #ccc;
+    }
+    .checkbox-item input[type="checkbox"] { margin-right: 10px; width: 18px; height: 18px; }
+    .inner-input { width: 100px !important; padding: 6px !important; margin: 0 10px !important; text-align: right; }
+
+    /* 手續費 Grid */
+    .fee-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;
+      background: #f8f9fa; border: 1px solid #ced4da; padding: 18px; border-radius: 8px;
+    }
+    .fee-item label { font-size: 0.75rem; color: #444; margin-bottom: 4px; }
+    .fee-item input { padding: 8px; font-size: 0.9rem; border: 1px solid #ccc; width: calc(100% - 25px); text-align: right; }
+
+    .highlight-box { background: #fffbe6; border: 1px solid #ffe066; padding: 18px; border-radius: 8px; display: flex; gap: 15px; }
+
+    .calc-btn {
+      width: 100%; padding: 16px; background: var(--rakuten-red); color: #fff;
+      border: none; border-radius: 8px; font-size: 1.15rem; font-weight: bold;
+      cursor: pointer; margin-top: 25px; box-shadow: 0 4px 0 #8e0000; transition: transform 0.1s;
+    }
+    .calc-btn:active { transform: translateY(4px); box-shadow: 0 0px 0 #8e0000; }
+
+    /* 結果區 */
+    #result { margin-top: 30px; display: none; }
+    
+    .kpi-board { display: flex; gap: 15px; margin-bottom: 20px; }
+    .kpi-card { flex: 1; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid var(--border-color); }
+    .kpi-card.main { border-color: var(--rakuten-red); background: #fff5f5; }
+    .kpi-title { font-size: 0.85rem; color: #555; margin-bottom: 8px; font-weight: bold; }
+    .kpi-val { font-size: 1.8rem; font-weight: 900; }
+    .kpi-sub { font-size: 1rem; font-weight: bold; margin-top: 5px; }
+
+    .eval-box { padding: 18px; border-radius: 8px; margin-bottom: 25px; font-size: 0.95rem; font-weight: bold; line-height: 1.6; }
+
+    /* 分析表 */
+    .analysis-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; background: #fff; }
+    .analysis-table th, .analysis-table td { padding: 10px 12px; border-bottom: 1px solid #eee; white-space: nowrap; }
+    .analysis-table .val { text-align: right; font-family: monospace; font-size: 1rem; }
+    .group-header { background: #f1f3f5; font-weight: bold; color: var(--navy); border-top: 2px solid var(--navy); }
+    .sub-item { padding-left: 25px; color: #666; font-size: 0.8rem; }
+    .tax-mark { color: #d63384; font-size: 0.75rem; font-weight: bold; margin-left: 4px; }
+
+    #evalMessage{display: none;}
+  </style>
 </head>
 <body>
+
 <div class="container">
-  <h2>販売価格計算</h2>
-  <label for="wholesalePrice">問屋の卸価格（税抜き）：</label>
-  <input type="number" id="wholesalePrice" step="0.01">
-  <label for="desiredProfitMargin">希望利益率（％）：</label>
-  <input type="number" id="desiredProfitMargin" step="0.01">
-  <label>
-    <input type="checkbox" id="includePackagingFee">
-    包装材料費：¥<input type="number" id="packagingFee" value="300" step="0.01">
-  </label>
-  <label>
-    <input type="checkbox" id="includeLaborCost">
-    工賃：¥<input type="number" id="laborCost" value="4000" step="0.01">
-  </label>
-  <button onclick="calculatePrice()">価格を計算する</button>
-  <div id="result"></div>
+  <h2>販売価格計算　2026</h2>
+  
+  <div class="mode-header" id="modeIndicator">現在：【販売価格計算モード】利益目標から販売価格を算出</div>
+  <button class="toggle-btn" onclick="toggleMode()">【モード】切り替え</button>
+
+  <div class="section-title">1. 基本原価と追加費用（税抜/税込）</div>
+  <div class="flex-row">
+    <div class="flex-col" style="flex: 2;">
+      <label>問屋卸価格 (税抜)</label>
+      <div class="input-wrapper">
+        <input type="number" id="wholesalePrice" value="">
+        <span class="unit">円</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="checkbox-item">
+    <input type="checkbox" id="chkPack" checked> 
+    <span style="font-weight:bold;">包装資材費 (税込)</span>
+    <input type="number" id="packagingFee" value="300" class="inner-input"> 円
+  </div>
+  <div class="checkbox-item">
+    <input type="checkbox" id="chkLabor"> 
+    <span style="font-weight:bold;">加工工賃 (税込)</span>
+    <input type="number" id="laborCost" value="4000" class="inner-input"> 円
+  </div>
+
+  <div class="section-title">2. 楽天基本手数料・経費率 (スタンダードプラン)</div>
+  <div class="fee-grid">
+    <div class="fee-item">
+      <label>システム利用料 (通常3%)</label>
+      <div><input type="number" id="fee_system" value="3.0" step="0.1"><span class="unit">%</span></div>
+    </div>
+    <div class="fee-item">
+      <label>楽天ペイ決済手数料</label>
+      <div><input type="number" id="fee_pay" value="3.0" step="0.1"><span class="unit">%</span></div>
+    </div>
+    <div class="fee-item">
+      <label>アフィリエイト原資</label>
+      <div><input type="number" id="fee_affiliate" value="3.0" step="0.1"><span class="unit">%</span></div>
+    </div>
+    <div class="fee-item">
+      <label>基本ポイント負担 (行事不参加)</label>
+      <div><input type="number" id="fee_point" value="1.0" step="0.1"><span class="unit">%</span></div>
+    </div>
+    <div class="fee-item">
+      <label>安全性/システム強化(固定)</label>
+      <div><input type="number" id="fee_security" value="0.2" step="0.01" readonly style="background:#e9ecef;"><span class="unit">%</span></div>
+    </div>
+    <div class="fee-item">
+      <label>RPP広告費等</label>
+      <div><input type="number" id="fee_ad" value="0" step="0.1"><span class="unit">%</span></div>
+    </div>
+  </div>
+
+  <div class="section-title">3. 財務リスクと目標設定</div>
+  <div class="highlight-box">
+    <div class="flex-col">
+      <label>損耗・返品引当率</label>
+      <div class="input-wrapper">
+        <input type="number" id="lossRate" value="0" step="0.1"><span class="unit">%</span>
+      </div>
+    </div>
+    <div class="flex-col" id="marginInputArea">
+      <label>目標 最終利益率 (NET)</label>
+      <div class="input-wrapper">
+        <input type="number" id="desiredProfitMargin" value="15.0" step="0.1"><span class="unit">%</span>
+      </div>
+    </div>
+    <div class="flex-col" id="priceInputArea" style="display:none; flex: 2;">
+      <label>競合/ターゲット販売価格 (税込)</label>
+      <div class="input-wrapper">
+        <input type="number" id="competitorPrice" value="13000"><span class="unit">円</span>
+      </div>
+    </div>
+  </div>
+
+  <button class="calc-btn" onclick="calculate()">価格を計算する</button>
+
+  <div id="result">
+    <div class="kpi-board">
+      <div class="kpi-card main">
+        <div class="kpi-title" id="resPriceTitle">推奨販売価格 (税込)</div>
+        <div class="kpi-val" id="resPrice" style="color:var(--rakuten-red);">¥0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">税金差引後の純手残り / 利益率</div>
+        <div class="kpi-val" id="resNetProfit" style="color:var(--green);">¥0</div>
+        <div class="kpi-sub" id="resMargin">0%</div>
+      </div>
+    </div>
+
+    <div id="evalMessage" class="eval-box"></div>
+
+    <table class="analysis-table">
+      <tbody>
+        <tr class="group-header"><th colspan="2">▼ 収入と税金（売上ベース）</th></tr>
+        <tr><td>販売価格 <span class="tax-mark">(税込)</span></td><td class="val" id="tblPrice">¥0</td></tr>
+        <tr><td class="sub-item">販売価格の内、預り消費税 <span class="tax-mark">(10%)</span></td><td class="val" id="tblTaxOut">¥0</td></tr>
+        
+        <tr class="group-header"><th colspan="2">▼ 支出・原価（キャッシュアウトベース）</th></tr>
+        <tr><td>実質原価合計 <span class="tax-mark">(税抜・裸コスト)</span></td><td class="val" id="tblNetCostExcl">¥0</td></tr>
+        <tr><td>問屋仕入額 <span class="tax-mark">(税込)</span></td><td class="val" id="tblWholesaleIncl">¥0</td></tr>
+        <tr><td>包装・工賃合計 <span class="tax-mark">(税込)</span></td><td class="val" id="tblAddCostIncl">¥0</td></tr>
+        <tr><td class="sub-item">仕入時の支払税額合計 <span class="tax-mark">(10%)</span></td><td class="val" id="tblTaxIn">¥0</td></tr>
+
+        <tr class="group-header"><th colspan="2">▼ 楽天手数料・決済細目（プラットフォーム費）</th></tr>
+        <tr><td class="sub-item">システム利用料</td><td class="val" id="tblFeeSystem">¥0</td></tr>
+        <tr><td class="sub-item">楽天ペイ決済手数料</td><td class="val" id="tblFeePay">¥0</td></tr>
+        <tr><td class="sub-item">アフィリエイト原資</td><td class="val" id="tblFeeAff">¥0</td></tr>
+        <tr><td class="sub-item">基本ポイント負担</td><td class="val" id="tblFeePoint">¥0</td></tr>
+        <tr><td class="sub-item">安全性・システム強化費(0.2%)</td><td class="val" id="tblFeeSec">¥0</td></tr>
+        <tr><td class="sub-item">RPP広告運用費</td><td class="val" id="tblFeeAd">¥0</td></tr>
+
+        <tr class="group-header"><th colspan="2">▼ 最終税務・利益計算</th></tr>
+        <tr><td>損耗・返品リスク引当金</td><td class="val" id="tblLoss">¥0</td></tr>
+        <tr><td>消費税納付額目安 <span style="font-size: 0.75rem;">(預り税 - 支払税)</span></td><td class="val" id="tblTaxPay">¥0</td></tr>
+        <tr><td style="font-weight:bold; color:var(--navy); font-size: 1rem;">最終利益 (NET) <span style="font-size: 0.75rem;">※純手残り額</span></td><td class="val" id="tblNetProfit" style="font-weight:bold; font-size: 1.1rem;">¥0</td></tr>
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <script>
-function roundUpTo50(value) {
-  return Math.ceil(value / 50) * 50;
+let isReverseMode = false;
+
+function toggleMode() {
+  isReverseMode = !isReverseMode;
+  const indicator = document.getElementById('modeIndicator');
+  
+  if (isReverseMode) {
+    indicator.innerHTML = "現在：【Tさんから逆算モード】Tさん価格から手残りを計算";
+    indicator.style.background = "#fff3cd";
+    indicator.style.color = "#856404";
+    document.getElementById('marginInputArea').style.display = "none";
+    document.getElementById('priceInputArea').style.display = "block";
+    document.getElementById('resPriceTitle').innerText = "設定販売価格 (税込)";
+  } else {
+    indicator.innerHTML = "現在：【販売価格計算モード】利益目標から販売価格を算出";
+    indicator.style.background = "#e9ecef";
+    indicator.style.color = "var(--navy)";
+    document.getElementById('marginInputArea').style.display = "block";
+    document.getElementById('priceInputArea').style.display = "none";
+    document.getElementById('resPriceTitle').innerText = "推奨販売価格 (税込)";
+  }
+  document.getElementById('result').style.display = 'none';
 }
 
-function calculatePrice() {
-  var wholesalePrice = parseFloat(document.getElementById('wholesalePrice').value);
-  var desiredProfitMargin = parseFloat(document.getElementById('desiredProfitMargin').value);
-  var includePackagingFee = document.getElementById('includePackagingFee').checked;
-  var packagingFee = includePackagingFee ? parseFloat(document.getElementById('packagingFee').value) : 0;
-  var includeLaborCost = document.getElementById('includeLaborCost').checked;
-  var laborCost = includeLaborCost ? parseFloat(document.getElementById('laborCost').value) : 0;
+function calculate() {
+  // 原價與附加費
+  const wholesaleExcl = parseFloat(document.getElementById('wholesalePrice').value) || 0;
+  const packFee = document.getElementById('chkPack').checked ? (parseFloat(document.getElementById('packagingFee').value) || 0) : 0;
+  const laborFee = document.getElementById('chkLabor').checked ? (parseFloat(document.getElementById('laborCost').value) || 0) : 0;
 
-  if (isNaN(wholesalePrice) || wholesalePrice <= 0) {
-    alert('正しい問屋の卸価格を入力してください。');
-    return;
+  // 手續費比率
+  const r_sys = (parseFloat(document.getElementById('fee_system').value) || 0) / 100;
+  const r_pay = (parseFloat(document.getElementById('fee_pay').value) || 0) / 100;
+  const r_aff = (parseFloat(document.getElementById('fee_affiliate').value) || 0) / 100;
+  const r_pnt = (parseFloat(document.getElementById('fee_point').value) || 0) / 100;
+  const r_sec = 0.002; // 0.2% 固定
+  const r_ad  = (parseFloat(document.getElementById('fee_ad').value) || 0) / 100;
+  const r_loss = (parseFloat(document.getElementById('lossRate').value) || 0) / 100;
+
+  const totalPlatformRate = r_sys + r_pay + r_aff + r_pnt + r_sec + r_ad;
+  const TAX_RATE = 0.10;
+  const TAX_ADJ = TAX_RATE / (1 + TAX_RATE); // 0.090909...
+
+  // 1. 會計成本計算
+  const fixedCostIncl = (wholesaleExcl * (1 + TAX_RATE)) + packFee + laborFee;
+  const taxIn = (wholesaleExcl * TAX_RATE) + ((packFee + laborFee) * TAX_ADJ);
+  const realCostBasis = fixedCostIncl - taxIn; // 實質裸成本基礎
+
+  let finalPrice = 0;
+  
+  // 2. 售價判定
+  if (!isReverseMode) {
+    const targetMargin = (parseFloat(document.getElementById('desiredProfitMargin').value) || 0) / 100;
+    const divisor = 1 - totalPlatformRate - r_loss - TAX_ADJ - targetMargin;
+    if (divisor <= 0) { 
+      alert('【エラー】経費と目標利益率の合計が高すぎます。\n広告費を下げるか、利益目標を調整してください。'); 
+      return; 
+    }
+    finalPrice = Math.ceil((realCostBasis / divisor) / 50) * 50; // 50圓進位
+  } else {
+    finalPrice = parseFloat(document.getElementById('competitorPrice').value) || 0;
   }
 
-  if (isNaN(desiredProfitMargin) || desiredProfitMargin <= 0) {
-    alert('正しい希望利益率を入力してください。');
-    return;
+  if (finalPrice <= 0) return;
+
+  // 3. 費用與稅金精確拆解
+  const salesTaxOut = finalPrice * TAX_ADJ; // 預收內稅
+  
+  const fee_sys_val = finalPrice * r_sys;
+  const fee_pay_val = finalPrice * r_pay;
+  const fee_aff_val = finalPrice * r_aff;
+  const fee_pnt_val = finalPrice * r_pnt;
+  const fee_sec_val = finalPrice * r_sec;
+  const fee_ad_val  = finalPrice * r_ad;
+  const total_fee   = fee_sys_val + fee_pay_val + fee_aff_val + fee_pnt_val + fee_sec_val + fee_ad_val;
+  
+  const loss_val   = finalPrice * r_loss;
+  const taxPay_val = salesTaxOut - taxIn;
+
+  // 4. 計算最終利益 (NET)
+  const netProfit = finalPrice - total_fee - fixedCostIncl - loss_val - taxPay_val;
+  const netMargin = (netProfit / finalPrice) * 100;
+
+  // 5. 渲染畫面資料
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('resPrice').innerText = '¥' + finalPrice.toLocaleString();
+  
+  const profitEl = document.getElementById('resNetProfit');
+  profitEl.innerText = '¥' + Math.round(netProfit).toLocaleString();
+  profitEl.style.color = netProfit >= 0 ? 'var(--green)' : 'var(--red)';
+  
+  const marginEl = document.getElementById('resMargin');
+  marginEl.innerText = '最終利益率 (NET): ' + netMargin.toFixed(1) + '%';
+  marginEl.style.color = netProfit >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // 戰略評價
+  let evalBox = document.getElementById('evalMessage');
+  if (netMargin > 15) {
+    evalBox.style.background = "#e3fafc"; evalBox.style.color = "#0b7285"; evalBox.style.borderLeft = "5px solid #0b7285";
+    evalBox.innerHTML = "✅ 【優良・利益確保モデル】<br>十分な現金が手元に残ります。この商品群を主力として育て、適宜RPP広告を強めて販売個数を最大化してください。";
+  } else if (netMargin > 5) {
+    evalBox.style.background = "#fff3bf"; evalBox.style.color = "#e67700"; evalBox.style.borderLeft = "5px solid #e67700";
+    evalBox.innerHTML = "⚠️ 【標準・防衛的モデル】<br>利益は出ていますが余裕はありません。イベント時の値引きや、送料無料ライン（3980円）の負担には特に注意が必要です。";
+  } else if (netProfit > 0) {
+    evalBox.style.background = "#ffe3e3"; evalBox.style.color = "#c92a2a"; evalBox.style.borderLeft = "5px solid #c92a2a";
+    evalBox.innerHTML = "🚨 【警告・フロントエンド商品】<br>利益が極めて薄いです。これは集客用（アクセス稼ぎ）と割り切り、必ず他の高利益商品と「同梱（ついで買い）」させる導線をページに作ってください。";
+  } else {
+    evalBox.style.background = "#fff0f0"; evalBox.style.color = "#c92a2a"; evalBox.style.borderLeft = "5px solid #c92a2a";
+    evalBox.innerHTML = "❌ 【危険・完全赤字状態】<br>売れば売るほど現金が減ります（1件あたり ¥" + Math.abs(Math.round(netProfit)).toLocaleString() + " の流出）。<br>広告費の停止、工賃の削減、または値上げを直ちに行ってください。";
   }
 
-  var tax = 1.1;
-  var securityServiceFeeRate = 0.001; // セキュリティーサービス料率
-  var salesCommissionRate = 0.033; // 販売手数料率
-  var settlementFeeRate = 0.032; // 決済手数料率
-  var otherFeeRate = 0.034; // その他手数料率
+  // 渲染明細表
+  document.getElementById('tblPrice').innerText = '¥' + finalPrice.toLocaleString();
+  document.getElementById('tblTaxOut').innerText = '¥' + Math.round(salesTaxOut).toLocaleString();
+  
+  document.getElementById('tblNetCostExcl').innerText = '¥' + Math.round(realCostBasis).toLocaleString();
+  document.getElementById('tblWholesaleIncl').innerText = '¥' + Math.round(wholesaleExcl * (1 + TAX_RATE)).toLocaleString();
+  document.getElementById('tblAddCostIncl').innerText = '¥' + Math.round(packFee + laborFee).toLocaleString();
+  document.getElementById('tblTaxIn').innerText = '¥' + Math.round(taxIn).toLocaleString();
 
-  // 販売価格の目安から計算した手数料
-  var totalCommissionRate = securityServiceFeeRate + salesCommissionRate + settlementFeeRate + otherFeeRate; // 手数料率合計
-  var commissionRate = totalCommissionRate * 1.1; // 消費税を含める
-  var targetCommission = wholesalePrice * commissionRate; // 手数料
-  var targetPrice = wholesalePrice + targetCommission + packagingFee + laborCost;
-
-  var recommendedPrice = Math.round((targetPrice * tax) * (1 + (desiredProfitMargin / 100)));
-
-  // 販売価格を50円単位で切り上げる
-  recommendedPrice = roundUpTo50(recommendedPrice);
-
-  // 粗利計算
-  var grossProfit = recommendedPrice - (wholesalePrice + packagingFee + laborCost);
-
-  // それぞれの手数料を販売価格の目安から計算
-  var securityServiceFee = Math.round(recommendedPrice * securityServiceFeeRate);
-  var salesCommission = Math.round(recommendedPrice * salesCommissionRate);
-  var settlementFee = Math.round(recommendedPrice * settlementFeeRate);
-  var otherFee = Math.round(recommendedPrice * otherFeeRate);
-
-  // 予想利益を計算
-  var expectedProfit = grossProfit - (securityServiceFee + salesCommission + settlementFee + otherFee);
-
-  var result = document.getElementById('result');
-  result.innerHTML = 'おすすめ販売価格: ¥' + recommendedPrice;
-  result.innerHTML += '<br>';
-  result.innerHTML += '予想利益(-諸手数料): ¥' + expectedProfit;
-  result.innerHTML += '<br>';
-  result.innerHTML += 'セキュリティーサービス料: ¥' + securityServiceFee;
-  result.innerHTML += '<br>';
-  result.innerHTML += '販売手数料: ¥' + salesCommission;
-  result.innerHTML += '<br>';
-  result.innerHTML += '決済手数料: ¥' + settlementFee;
-  result.innerHTML += '<br>';
-  result.innerHTML += 'その他手数料(出店コストなど): ¥' + otherFee;
+  document.getElementById('tblFeeSystem').innerText = '¥' + Math.round(fee_sys_val).toLocaleString();
+  document.getElementById('tblFeePay').innerText = '¥' + Math.round(fee_pay_val).toLocaleString();
+  document.getElementById('tblFeeAff').innerText = '¥' + Math.round(fee_aff_val).toLocaleString();
+  document.getElementById('tblFeePoint').innerText = '¥' + Math.round(fee_pnt_val).toLocaleString();
+  document.getElementById('tblFeeSec').innerText = '¥' + Math.round(fee_sec_val).toLocaleString();
+  document.getElementById('tblFeeAd').innerText = '¥' + Math.round(fee_ad_val).toLocaleString();
+  
+  document.getElementById('tblLoss').innerText = '¥' + Math.round(loss_val).toLocaleString();
+  document.getElementById('tblTaxPay').innerText = '¥' + Math.round(taxPay_val).toLocaleString();
+  
+  const finalNetEl = document.getElementById('tblNetProfit');
+  finalNetEl.innerText = '¥' + Math.round(netProfit).toLocaleString();
+  finalNetEl.style.color = netProfit >= 0 ? 'var(--navy)' : 'var(--red)';
 }
 </script>
+
 </body>
 </html>
