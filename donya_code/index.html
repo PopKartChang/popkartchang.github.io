@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://script.google.com https://script.googleusercontent.com 同期エラー: DOMException: The quota has been exceeded.
-    syncData https://popkartchang.github.io/ ws://127.0.0.1:5500 ws://localhost:5500;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://script.google.com https://script.googleusercontent.com https://popkartchang.github.io;">
     <title>変換マスタ管理システム</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -430,6 +429,7 @@
         }
         .toast-item.toast-success { background: var(--success); }
         .toast-item.toast-error { background: var(--danger); }
+        .toast-item.toast-info { background: #6366f1; }
         @keyframes slideIn {
             from { transform: translateX(120%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
@@ -812,9 +812,23 @@
                     z: String(r[3] ?? '').trim(),
                 }));
 
-            localStorage.setItem(KEYS.DATA,      JSON.stringify(processed));
-            localStorage.setItem(KEYS.LAST_SYNC, String(Date.now()));
-            localStorage.setItem(KEYS.SERVER_TS, json.serverTime ?? '---');
+            const nowTs = String(Date.now());
+            const serverTs = json.serverTime ?? '---';
+            // localStorage は 5MB 上限のため、容量超過時はデータのみ保存を省略してメモリ動作
+            try {
+                localStorage.setItem(KEYS.DATA,      JSON.stringify(processed));
+                localStorage.setItem(KEYS.LAST_SYNC, nowTs);
+                localStorage.setItem(KEYS.SERVER_TS, serverTs);
+            } catch (storageErr) {
+                console.warn('localStorage 容量超過。メモリのみで動作します。', storageErr);
+                // タイムスタンプだけは軽いので保存を試みる
+                try {
+                    localStorage.removeItem(KEYS.DATA);
+                    localStorage.setItem(KEYS.LAST_SYNC, nowTs);
+                    localStorage.setItem(KEYS.SERVER_TS, serverTs);
+                } catch (_) { /* ignore */ }
+                showToast('⚠️ データ量が多いためキャッシュなしで動作します', 'info', 5000);
+            }
 
             masterData = processed;
             updateDataCount();
@@ -1213,7 +1227,7 @@
     function showToast(msg, type = 'info', duration = 3000) {
         const stack = document.getElementById('toastStack');
         const item  = document.createElement('div');
-        item.className = `toast-item${type === 'success' ? ' toast-success' : type === 'error' ? ' toast-error' : ''}`;
+        item.className = `toast-item${type === 'success' ? ' toast-success' : type === 'error' ? ' toast-error' : type === 'info' ? ' toast-info' : ''}`;
         item.textContent = msg;
         stack.appendChild(item);
         setTimeout(() => {
