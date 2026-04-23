@@ -723,17 +723,72 @@
     // =============================================
     // 設定
     // =============================================
-    const GAS_URL     = "https://script.google.com/macros/s/AKfycbwce3KuVDjreoFrFXC3kP3AbqkuV-RgmWjQSSsiweD689KdnOuGeqxFkF5M3HfOG7eR/exec";
-    const EXPIRE_MIN  = 240;
+    const GAS_URL    = "https://script.google.com/macros/s/AKfycbwce3KuVDjreoFrFXC3kP3AbqkuV-RgmWjQSSsiweD689KdnOuGeqxFkF5M3HfOG7eR/exec";
+    const EXPIRE_MIN = 240;
     const MAX_HISTORY = 8;
 
-    const KEYS = {
-        DATA:      "APP_DATA_v2",
-        LAST_SYNC: "LAST_SYNC_TS_v2",
-        SERVER_TS: "SERVER_TS_v2",
-        HIST_FWD:  "HIST_FWD_v2",
-        HIST_REV:  "HIST_REV_v2",
+    // localStorage はタイムスタンプ・履歴のみ（軽量データ）
+    const LS = {
+        LAST_SYNC: "LAST_SYNC_TS_v3",
+        SERVER_TS: "SERVER_TS_v3",
+        HIST_FWD:  "HIST_FWD_v3",
+        HIST_REV:  "HIST_REV_v3",
     };
+
+    // =============================================
+    // IndexedDB ラッパー
+    // データ本体（10MB超）はIndexedDBに保存（容量制限なし）
+    // =============================================
+    const IDB = (() => {
+        const DB_NAME    = 'MasterDB_v3';
+        const DB_VERSION = 1;
+        const STORE      = 'masterData';
+        let _db = null;
+
+        function open() {
+            if (_db) return Promise.resolve(_db);
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(DB_NAME, DB_VERSION);
+                req.onupgradeneeded = e => {
+                    e.target.result.createObjectStore(STORE);
+                };
+                req.onsuccess = e => { _db = e.target.result; resolve(_db); };
+                req.onerror   = e => reject(e.target.error);
+            });
+        }
+
+        async function set(key, value) {
+            const db = await open();
+            return new Promise((resolve, reject) => {
+                const tx  = db.transaction(STORE, 'readwrite');
+                const req = tx.objectStore(STORE).put(value, key);
+                req.onsuccess = () => resolve();
+                req.onerror   = e => reject(e.target.error);
+            });
+        }
+
+        async function get(key) {
+            const db = await open();
+            return new Promise((resolve, reject) => {
+                const tx  = db.transaction(STORE, 'readonly');
+                const req = tx.objectStore(STORE).get(key);
+                req.onsuccess = e => resolve(e.target.result ?? null);
+                req.onerror   = e => reject(e.target.error);
+            });
+        }
+
+        async function del(key) {
+            const db = await open();
+            return new Promise((resolve, reject) => {
+                const tx  = db.transaction(STORE, 'readwrite');
+                const req = tx.objectStore(STORE).delete(key);
+                req.onsuccess = () => resolve();
+                req.onerror   = e => reject(e.target.error);
+            });
+        }
+
+        return { set, get, del };
+    })();
 
     // =============================================
     // 状態
@@ -763,22 +818,30 @@
     });
 
     async function init() {
-        const cached   = safeLocalGet(KEYS.DATA);
-        const lastSync = safeLocalGet(KEYS.LAST_SYNC);
+        const lastSync = safeLocalGet(LS.LAST_SYNC);
 
-        if (cached && lastSync) {
+        if (lastSync) {
             const elapsed = (Date.now() - parseInt(lastSync, 10)) / 60000;
             if (elapsed > EXPIRE_MIN) {
                 await syncData();
             } else {
                 try {
-                    masterData = JSON.parse(cached);
-                    updateDataCount();
-                    refreshUI();
-                    startCountdown(parseInt(lastSync, 10));
-                    checkServerUpdate();
+                    // IndexedDB からデータ読み込み（大容量OK）
+                    toggleOverlay(true, 'キャッシュを読み込んでいます...', 'しばらくお待ちください');
+                    const cached = await IDB.get('masterData');
+                    toggleOverlay(false);
+                    if (cached && Array.isArray(cached) && cached.length > 0) {
+                        masterData = cached;
+                        updateDataCount();
+                        refreshUI();
+                        startCountdown(parseInt(lastSync, 10));
+                        checkServerUpdate();
+                    } else {
+                        await syncData();
+                    }
                 } catch (e) {
-                    console.error("キャッシュ解析失敗。再同期します。", e);
+                    console.error("IndexedDB 読み込み失敗。再同期します。", e);
+                    toggleOverlay(false);
                     await syncData();
                 }
             }
@@ -794,10 +857,10 @@
         if (isSyncing) return;
         isSyncing = true;
         setSyncingUI(true);
-        toggleOverlay(true, "サーバーから最新データを取得中...", "しばらくお待ちください");
+        toggleOverlay(true, "サーバーから最新データを取得中...", "大容量データのため時間がかかる場合があります");
 
         try {
-            const res = await fetchWithTimeout(`${GAS_URL}?action=get_data`, {}, 20000);
+            const res = await fetchWithTimeout(`${GAS_URL}?action=get_data`, {}, 30000);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const json = await res.json();
             if (!json.data) throw new Error("サーバーから有効なデータが返されませんでした");
@@ -812,29 +875,30 @@
                     z: String(r[3] ?? '').trim(),
                 }));
 
-            const nowTs = String(Date.now());
+            const nowTs    = String(Date.now());
             const serverTs = json.serverTime ?? '---';
-            // localStorage は 5MB 上限のため、容量超過時はデータのみ保存を省略してメモリ動作
+
+            // IndexedDB にデータ本体を保存（容量制限なし）
+            toggleOverlay(true, "データをローカルに保存中...", `${processed.length.toLocaleString('ja-JP')}件`);
             try {
-                localStorage.setItem(KEYS.DATA,      JSON.stringify(processed));
-                localStorage.setItem(KEYS.LAST_SYNC, nowTs);
-                localStorage.setItem(KEYS.SERVER_TS, serverTs);
-            } catch (storageErr) {
-                console.warn('localStorage 容量超過。メモリのみで動作します。', storageErr);
-                // タイムスタンプだけは軽いので保存を試みる
-                try {
-                    localStorage.removeItem(KEYS.DATA);
-                    localStorage.setItem(KEYS.LAST_SYNC, nowTs);
-                    localStorage.setItem(KEYS.SERVER_TS, serverTs);
-                } catch (_) { /* ignore */ }
-                showToast('⚠️ データ量が多いためキャッシュなしで動作します', 'info', 5000);
+                await IDB.set('masterData', processed);
+            } catch (idbErr) {
+                console.warn('IndexedDB 保存失敗（メモリのみで動作）:', idbErr);
+                showToast('⚠️ ローカル保存に失敗しました。次回起動時に再取得します。', 'info', 5000);
             }
+
+            // タイムスタンプは localStorage（軽量）
+            try {
+                localStorage.setItem(LS.LAST_SYNC, nowTs);
+                localStorage.setItem(LS.SERVER_TS, serverTs);
+            } catch (_) { /* ignore */ }
 
             masterData = processed;
             updateDataCount();
             refreshUI();
             startCountdown(Date.now());
-            showToast('✅ データを同期しました', 'success');
+            showToast(`✅ データを同期しました (${processed.length.toLocaleString('ja-JP')}件)`, 'success');
+
         } catch (e) {
             console.error("同期エラー:", e);
             showToast(`❌ 同期失敗: ${e.message}`, 'error');
@@ -858,8 +922,7 @@
         }
     }
 
-    // タイムアウト付きfetch
-    // GAS は 302 リダイレクトを返す → redirect:follow が必須
+    // タイムアウト付きfetch（GAS は302リダイレクトを返す → redirect:follow が必須）
     function fetchWithTimeout(url, opts = {}, ms = 15000) {
         const ctrl = new AbortController();
         const id = setTimeout(() => ctrl.abort(), ms);
@@ -888,12 +951,15 @@
             const res = await fetchWithTimeout(GAS_URL, {
                 method: 'POST',
                 body: JSON.stringify({ action: 'upload', data: b64 }),
-            }, 30000);
+            }, 60000);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const resJson = await res.json();
 
             if (resJson.status === 'success') {
-                showToast('✅ アップロード完了。データを同期します。', 'success');
+                // キャッシュをクリアして強制再取得
+                try { await IDB.del('masterData'); } catch (_) {}
+                try { localStorage.removeItem(LS.LAST_SYNC); } catch (_) {}
+                showToast('✅ アップロード完了。最新データを取得します。', 'success');
                 resetFileUI();
                 await syncData();
             } else {
@@ -921,8 +987,8 @@
             showToast('CSVファイル(.csv)のみ対応しています', 'error');
             return;
         }
-        if (file.size > 5 * 1024 * 1024) {
-            showToast('ファイルサイズは5MB以内にしてください', 'error');
+        if (file.size > 20 * 1024 * 1024) {
+            showToast('ファイルサイズは20MB以内にしてください', 'error');
             return;
         }
         selectedFile = file;
@@ -950,7 +1016,7 @@
                 });
                 tbody.appendChild(tr);
             });
-            setEl('previewRowCount', `データ行数: ${dataLines.length}件`);
+            setEl('previewRowCount', `データ行数: ${dataLines.length.toLocaleString('ja-JP')}件`);
             document.getElementById('previewSection').style.display = 'block';
         };
         reader.readAsText(file, 'UTF-8');
@@ -973,7 +1039,7 @@
         const tableId = isRev ? "revResTable"   : "resTable";
         const countId = isRev ? "revResultCount" : "fwdResultCount";
         const chkId   = isRev ? "chkPartialRev"  : "chkPartialFwd";
-        const histKey = isRev ? KEYS.HIST_REV     : KEYS.HIST_FWD;
+        const histKey = isRev ? LS.HIST_REV       : LS.HIST_FWD;
         const histId  = isRev ? "revHistory"      : "fwdHistory";
 
         const rawQuery = document.getElementById(inputId).value.trim();
@@ -984,17 +1050,14 @@
         const tbody   = document.querySelector(`#${tableId} tbody`);
         const countEl = document.getElementById(countId);
 
-        // 検索
         const results = masterData.filter(d => {
             const target = (isRev ? d.s : d.i).toLowerCase();
             return partial ? target.startsWith(query) : target === query;
         });
 
-        // 履歴保存
         addHistory(histKey, rawQuery);
         renderHistory(histId, histKey, isRev);
 
-        // テーブル描画
         const frag = document.createDocumentFragment();
 
         if (results.length === 0) {
@@ -1046,7 +1109,7 @@
                 tr.appendChild(td3);
                 frag.appendChild(tr);
             });
-            countEl.innerHTML = `<strong>${results.length}</strong>件 見つかりました`;
+            countEl.innerHTML = `<strong>${results.length.toLocaleString('ja-JP')}</strong>件 見つかりました`;
         }
 
         tbody.innerHTML = '';
@@ -1061,7 +1124,7 @@
         hist = hist.filter(h => h !== query);
         hist.unshift(query);
         if (hist.length > MAX_HISTORY) hist = hist.slice(0, MAX_HISTORY);
-        localStorage.setItem(key, JSON.stringify(hist));
+        try { localStorage.setItem(key, JSON.stringify(hist)); } catch (_) {}
     }
 
     function renderHistory(containerId, key, isRev) {
@@ -1108,7 +1171,7 @@
     function removeHistory(key, query) {
         let hist = safeJsonParse(safeLocalGet(key), []);
         hist = hist.filter(h => h !== query);
-        localStorage.setItem(key, JSON.stringify(hist));
+        try { localStorage.setItem(key, JSON.stringify(hist)); } catch (_) {}
     }
 
     // =============================================
@@ -1151,8 +1214,8 @@
     // =============================================
     function startCountdown(syncTs) {
         if (countdownTimer) clearInterval(countdownTimer);
-        const el     = document.getElementById("txtExpiry");
-        const badge  = document.getElementById("expiryBadge");
+        const el    = document.getElementById("txtExpiry");
+        const badge = document.getElementById("expiryBadge");
 
         countdownTimer = setInterval(() => {
             const remainMs = (EXPIRE_MIN * 60000) - (Date.now() - syncTs);
@@ -1166,11 +1229,7 @@
                 const m = Math.floor(remainMs / 60000);
                 const s = Math.floor((remainMs % 60000) / 1000);
                 el.textContent = `${m}分 ${s.toString().padStart(2,'0')}秒`;
-                if (m < 10) {
-                    badge.classList.add('urgent');
-                } else {
-                    badge.classList.remove('urgent');
-                }
+                badge.classList.toggle('urgent', m < 10);
             }
         }, 1000);
     }
@@ -1179,8 +1238,8 @@
     // UI更新
     // =============================================
     function refreshUI() {
-        const local  = safeLocalGet(KEYS.LAST_SYNC);
-        const server = safeLocalGet(KEYS.SERVER_TS);
+        const local  = safeLocalGet(LS.LAST_SYNC);
+        const server = safeLocalGet(LS.SERVER_TS);
         if (local)  setEl('txtLocalTime',  new Date(parseInt(local, 10)).toLocaleString('ja-JP'));
         if (server) { setEl('txtServerTime', server); setEl('txtServerStatus', server); }
     }
@@ -1216,8 +1275,8 @@
         const dot    = document.getElementById('onlineDot');
         setEl('connStatus', online ? 'オンライン' : 'オフライン');
         if (dot) {
-            dot.style.background    = online ? 'var(--success)' : 'var(--danger)';
-            dot.style.boxShadow     = online ? '0 0 6px var(--success)' : '0 0 6px var(--danger)';
+            dot.style.background = online ? 'var(--success)' : 'var(--danger)';
+            dot.style.boxShadow  = online ? '0 0 6px var(--success)' : '0 0 6px var(--danger)';
         }
     }
 
@@ -1240,22 +1299,14 @@
     // イベント登録
     // =============================================
     function bindEvents() {
-        // 検索ボタン
         document.getElementById("btnExecSearch").addEventListener('click',    () => search(false));
         document.getElementById("btnExecRevSearch").addEventListener('click', () => search(true));
-
-        // Enterキー
         document.getElementById("inItemCode").addEventListener('keydown',     e => { if (e.key === 'Enter') search(false); });
         document.getElementById("inShouhinCode").addEventListener('keydown',  e => { if (e.key === 'Enter') search(true); });
-
-        // 手動同期
         document.getElementById("btnManualSync").addEventListener('click',    () => syncData());
-
-        // アップロード
         document.getElementById("btnUpload").addEventListener('click',        handleUpload);
         document.getElementById("filePicker").addEventListener('change',      e => handleFileSelect(e.target.files[0]));
 
-        // ドラッグ＆ドロップ
         const dz = document.getElementById("dropZone");
         dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('dragover'); });
         dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
@@ -1266,10 +1317,8 @@
             if (file) handleFileSelect(file);
         });
 
-        // マスタ管理タブ表示時
         document.getElementById("btnTabUpload").addEventListener('shown.bs.tab', checkServerUpdate);
 
-        // Ctrl+K でフォーカス
         document.addEventListener('keydown', e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
                 e.preventDefault();
@@ -1279,13 +1328,11 @@
             }
         });
 
-        // オンライン/オフライン検知
         window.addEventListener('online',  updateConnectionStatus);
         window.addEventListener('offline', updateConnectionStatus);
 
-        // 履歴初期表示
-        renderHistory('fwdHistory', KEYS.HIST_FWD, false);
-        renderHistory('revHistory', KEYS.HIST_REV, true);
+        renderHistory('fwdHistory', LS.HIST_FWD, false);
+        renderHistory('revHistory', LS.HIST_REV, true);
     }
 
     // =============================================
