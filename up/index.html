@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>檔案上傳中心</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── Reset & Tokens ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0c0c0f;
+    --surface: #141418;
+    --surface2: #1c1c22;
+    --border: #2a2a35;
+    --accent: #7c6bff;
+    --accent2: #ff6b9d;
+    --accent3: #6bffda;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --danger: #ff4d6d;
+    --success: #4dffc3;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --radius: 12px;
+    --radius-lg: 20px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Background FX ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 20%, rgba(124,107,255,0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 60% at 80% 80%, rgba(107,255,218,0.05) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Layout ── */
+  .app {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  header {
+    padding: 28px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.2rem;
+    letter-spacing: 0.05em;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    display: inline-block;
+    margin-right: 8px;
+    transition: background 0.3s;
+  }
+  .status-dot.online { background: var(--success); box-shadow: 0 0 8px var(--success); }
+
+  .status-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  /* ── Main ── */
+  main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 560px;
+  }
+
+  /* ── Page Title ── */
+  .page-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 6vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  .page-subtitle {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 40px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.5;
+  }
+
+  /* ── Section label ── */
+  .section-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── Form elements ── */
+  .field { margin-bottom: 20px; }
+
+  label {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+    letter-spacing: 0.06em;
+  }
+
+  input[type="password"], input[type="text"] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124,107,255,0.15);
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 13px 24px;
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #5a4de0);
+    color: #fff;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(124,107,255,0.35);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.78rem;
+    padding: 8px 16px;
+    width: auto;
+  }
+
+  .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
+
+  /* ── Drop Zone ── */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-lg);
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    margin-bottom: 24px;
+  }
+
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--accent);
+    background: rgba(124,107,255,0.05);
+  }
+
+  .drop-zone.has-file {
+    border-color: var(--accent3);
+    background: rgba(107,255,218,0.04);
+  }
+
+  .drop-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+    display: block;
+    transition: transform 0.2s;
+  }
+
+  .drop-zone:hover .drop-icon { transform: translateY(-4px); }
+
+  .drop-title {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .drop-hint {
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  #file-input { display: none; }
+
+  /* ── File preview ── */
+  .file-preview {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: none;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    animation: slideIn 0.2s ease;
+  }
+
+  .file-preview.show { display: flex; }
+
+  .file-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .file-meta { flex: 1; min-width: 0; }
+  .file-name {
+    font-size: 0.88rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .file-size { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+  .remove-file {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 1.2rem;
+    padding: 4px; border-radius: 6px;
+    transition: color 0.2s;
+    flex-shrink: 0;
+  }
+  .remove-file:hover { color: var(--danger); }
+
+  /* ── Progress ── */
+  .progress-wrap {
+    background: var(--surface2);
+    border-radius: 100px;
+    height: 4px;
+    overflow: hidden;
+    margin: 16px 0;
+    display: none;
+  }
+
+  .progress-bar {
+    height: 100%;
+    border-radius: 100px;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+
+  /* ── Config info chips ── */
+  .config-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 4px 12px;
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  .chip span { color: var(--accent3); }
+
+  /* ── Toast ── */
+  .toast-wrap {
+    position: fixed;
+    top: 24px; right: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 999;
+  }
+
+  .toast {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    font-size: 0.83rem;
+    max-width: 340px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    animation: toastIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border-left: 3px solid var(--muted);
+  }
+
+  .toast.success { border-left-color: var(--success); }
+  .toast.error { border-left-color: var(--danger); }
+  .toast.info { border-left-color: var(--accent); }
+
+  .toast-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+  .toast-msg { line-height: 1.5; }
+
+  /* ── Upload result ── */
+  .result-card {
+    background: var(--surface2);
+    border: 1px solid var(--accent3);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-top: 16px;
+    display: none;
+    animation: slideIn 0.3s ease;
+  }
+
+  .result-card.show { display: block; }
+
+  .result-label {
+    font-size: 0.7rem;
+    color: var(--accent3);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .result-link {
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.82rem;
+    word-break: break-all;
+    display: block;
+    line-height: 1.5;
+  }
+
+  .result-link:hover { color: var(--accent3); }
+
+  /* ── Log table ── */
+  .log-section {
+    margin-top: 32px;
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+  }
+
+  .log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .log-title {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .log-table-wrap {
+    overflow-x: auto;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+  }
+
+  th {
+    background: var(--surface2);
+    padding: 10px 14px;
+    text-align: left;
+    color: var(--muted);
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    white-space: nowrap;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  tr:hover td { background: rgba(124,107,255,0.04); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 100px;
+    font-size: 0.68rem;
+    background: rgba(77,255,195,0.12);
+    color: var(--success);
+  }
+
+  /* ── Views ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── Header bar with logout ── */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+
+  /* ── Animations ── */
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(16px) scale(0.95); }
+    to   { opacity: 1; transform: translateX(0) scale(1); }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  /* ── Mobile ── */
+  @media (max-width: 600px) {
+    header { padding: 20px; }
+    .card { padding: 22px; }
+    .drop-zone { padding: 36px 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <span class="logo">UPLOAD /</span>
+    <div>
+      <span class="status-dot" id="status-dot"></span>
+      <span class="status-label" id="status-label">離線</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+
+      <!-- ── LOGIN VIEW ── -->
+      <div class="view active" id="view-login">
+        <div class="page-title">File<br>UP</div>
+        <div class="page-subtitle">// パスワード入力</div>
+
+        <div class="card">
+          <div class="section-label">ログイン</div>
+          <div class="field">
+            <label>パスワード</label>
+            <input type="password" id="password-input" placeholder="パスワード入力…" autocomplete="current-password">
+          </div>
+          <button class="btn btn-primary" id="login-btn" onclick="login()">
+            <span id="login-btn-text">ログイン</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ── UPLOAD VIEW ── -->
+      <div class="view" id="view-upload">
+        <div class="top-bar">
+          <div>
+            <div class="page-title" style="font-size:1.8rem;">アップロード</div>
+            <div class="page-subtitle" style="margin-bottom:0">// ファイル選択</div>
+          </div>
+          <button class="btn btn-ghost" onclick="logout()">ログアウト</button>
+        </div>
+
+        <div class="card">
+          <div class="config-chips" id="config-chips"></div>
+
+          <div class="section-label">ファイル選択</div>
+
+          <div class="drop-zone" id="drop-zone"
+               onclick="document.getElementById('file-input').click()"
+               ondragover="handleDragOver(event)"
+               ondragleave="handleDragLeave(event)"
+               ondrop="handleDrop(event)">
+            <span class="drop-icon">📁</span>
+            <div class="drop-title">ファイルをここに置いて</div>
+            <div class="drop-hint">もしくはファイルを選択<br>
+              <span id="hint-size"></span>
+            </div>
+          </div>
+
+          <input type="file" id="file-input" onchange="handleFileSelect(event)">
+
+          <div class="file-preview" id="file-preview">
+            <span class="file-icon" id="preview-icon">📄</span>
+            <div class="file-meta">
+              <div class="file-name" id="preview-name"></div>
+              <div class="file-size" id="preview-size"></div>
+            </div>
+            <button class="remove-file" onclick="removeFile()">✕</button>
+          </div>
+
+          <div class="progress-wrap" id="progress-wrap">
+            <div class="progress-bar" id="progress-bar"></div>
+          </div>
+
+          <button class="btn btn-primary" id="upload-btn" onclick="uploadFile()" disabled>
+            <span id="upload-btn-text">アップロード</span>
+          </button>
+
+          <div class="result-card" id="result-card">
+            <div class="result-label">✅ アップロード成功</div>
+            <a class="result-link" id="result-link" target="_blank" rel="noopener"></a>
+          </div>
+        </div>
+
+        <!-- LOG SECTION -->
+        <div class="log-section" id="log-section" style="display:none">
+          <div class="log-header">
+            <div class="log-title">上傳紀錄</div>
+            <button class="btn btn-ghost" onclick="loadLogs()">重新整理</button>
+          </div>
+          <div class="log-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>時間</th>
+                  <th>檔名</th>
+                  <th>大小</th>
+                  <th>類型</th>
+                  <th>連結</th>
+                  <th>狀態</th>
+                </tr>
+              </thead>
+              <tbody id="log-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /.container -->
+  </main>
+</div><!-- /.app -->
+
+<!-- Toasts -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+// ╔══════════════════════════════════════════════════════╗
+// ║  設定：把你的 Apps Script 部署 URL 貼在這裡          ║
+// ╚══════════════════════════════════════════════════════╝
+const API_URL = "https://script.google.com/macros/s/AKfycbyIwD5P0XtDdAhI9BQ-Vzi2OqGDWbYAkot7SBIzK5ZU8ui6SIaJMm-RYlbuBhd7v4rB/exec";
+//                                                        ↑ 替換這裡
+
+// ── State ────────────────────────────────────────────────
+let token = sessionStorage.getItem("upload_token") || null;
+let tokenExpiry = Number(sessionStorage.getItem("upload_expiry")) || 0;
+let uploadConfig = null;
+let selectedFile = null;
+
+// ── Init ─────────────────────────────────────────────────
+window.addEventListener("DOMContentLoaded", () => {
+  if (token && Date.now() < tokenExpiry) {
+    showView("upload");
+    fetchConfig();
+    updateStatus(true);
+  } else {
+    clearSession();
+    updateStatus(false);
+  }
+
+  // Enter key on password field
+  document.getElementById("password-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") login();
+  });
+});
+
+// ── API call ──────────────────────────────────────────────
+async function api(body) {
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+// ── Auth ──────────────────────────────────────────────────
+async function login() {
+  const pw = document.getElementById("password-input").value.trim();
+  if (!pw) return toast("請輸入密碼", "error");
+
+  setLoading("login-btn", "login-btn-text", true, "驗證中…");
+  try {
+    const data = await api({ action: "login", password: pw });
+    if (data.success) {
+      token = data.token;
+      tokenExpiry = data.expiresAt;
+      sessionStorage.setItem("upload_token", token);
+      sessionStorage.setItem("upload_expiry", tokenExpiry);
+      uploadConfig = data.config;
+      showView("upload");
+      updateStatus(true);
+      applyConfig();
+      toast("登入成功", "success");
+      loadLogs();
+    } else {
+      toast(data.error || "密碼錯誤", "error");
+    }
+  } catch (e) {
+    toast("無法連線到 API，請確認設定", "error");
+  }
+  setLoading("login-btn", "login-btn-text", false, "驗證登入");
+}
+
+function logout() {
+  clearSession();
+  showView("login");
+  updateStatus(false);
+  document.getElementById("password-input").value = "";
+  toast("已登出", "info");
+}
+
+function clearSession() {
+  token = null; tokenExpiry = 0; uploadConfig = null;
+  sessionStorage.removeItem("upload_token");
+  sessionStorage.removeItem("upload_expiry");
+}
+
+async function fetchConfig() {
+  try {
+    const data = await api({ action: "getConfig", token });
+    if (data.success) { uploadConfig = data.config; applyConfig(); loadLogs(); }
+    else { logout(); }
+  } catch (e) { /* silent */ }
+}
+
+// ── Config display ────────────────────────────────────────
+function applyConfig() {
+  if (!uploadConfig) return;
+  const chips = document.getElementById("config-chips");
+  const hint = document.getElementById("hint-size");
+  chips.innerHTML = `
+    <div class="chip">上限 <span>${uploadConfig.maxFileSizeMb} MB</span></div>
+    <div class="chip">允許 <span>${uploadConfig.allowedExtensions || '所有'}</span></div>
+  `;
+  hint.textContent = `允許格式：${uploadConfig.allowedExtensions || '所有'} · 最大 ${uploadConfig.maxFileSizeMb} MB`;
+}
+
+// ── File handling ─────────────────────────────────────────
+function handleFileSelect(e) { setFile(e.target.files[0]); }
+
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById("drop-zone").classList.add("dragover");
+}
+
+function handleDragLeave(e) {
+  document.getElementById("drop-zone").classList.remove("dragover");
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById("drop-zone").classList.remove("dragover");
+  const f = e.dataTransfer.files[0];
+  if (f) setFile(f);
+}
+
+function setFile(file) {
+  if (!file) return;
+  selectedFile = file;
+
+  // Extension check client-side
+  if (uploadConfig?.allowedExtensions) {
+    const ext = file.name.split(".").pop().toLowerCase();
+    const allowed = uploadConfig.allowedExtensions.split(",").map(s => s.trim().toLowerCase());
+    if (allowed[0] !== "" && !allowed.includes(ext)) {
+      toast(`不允許的副檔名：.${ext}`, "error");
+      return;
+    }
+  }
+
+  // Size check client-side
+  const sizeMb = file.size / (1024 * 1024);
+  if (uploadConfig && sizeMb > uploadConfig.maxFileSizeMb) {
+    toast(`檔案 ${sizeMb.toFixed(1)} MB 超過上限 ${uploadConfig.maxFileSizeMb} MB`, "error");
+    return;
+  }
+
+  // Show preview
+  document.getElementById("preview-icon").textContent = fileIcon(file.type);
+  document.getElementById("preview-name").textContent = file.name;
+  document.getElementById("preview-size").textContent = formatSize(file.size);
+  document.getElementById("file-preview").classList.add("show");
+  document.getElementById("drop-zone").classList.add("has-file");
+  document.getElementById("upload-btn").disabled = false;
+  document.getElementById("result-card").classList.remove("show");
+}
+
+function removeFile() {
+  selectedFile = null;
+  document.getElementById("file-input").value = "";
+  document.getElementById("file-preview").classList.remove("show");
+  document.getElementById("drop-zone").classList.remove("has-file");
+  document.getElementById("upload-btn").disabled = true;
+}
+
+// ── Upload ────────────────────────────────────────────────
+async function uploadFile() {
+  if (!selectedFile) return;
+  if (!token || Date.now() > tokenExpiry) { logout(); return; }
+
+  setLoading("upload-btn", "upload-btn-text", true, "上傳中…");
+  showProgress(0);
+
+  try {
+    // Read file as base64
+    const base64 = await readFileBase64(selectedFile, pct => showProgress(pct * 0.6));
+
+    showProgress(70);
+    const data = await api({
+      action: "upload",
+      token,
+      filename: selectedFile.name,
+      mimeType: selectedFile.type || "application/octet-stream",
+      base64Data: base64
+    });
+    showProgress(100);
+
+    if (data.success) {
+      toast(`✅ ${data.filename} 上傳成功`, "success");
+      const link = document.getElementById("result-link");
+      link.href = data.fileLink;
+      link.textContent = data.fileLink;
+      document.getElementById("result-card").classList.add("show");
+      removeFile();
+      setTimeout(loadLogs, 1500);
+    } else {
+      toast(data.error || "上傳失敗", "error");
+    }
+  } catch (e) {
+    toast("上傳時發生錯誤：" + e.message, "error");
+  }
+
+  setTimeout(() => hideProgress(), 800);
+  setLoading("upload-btn", "upload-btn-text", false, "上傳檔案");
+}
+
+function readFileBase64(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onprogress = e => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+    reader.onload = () => {
+      const b64 = reader.result.split(",")[1];
+      resolve(b64);
+    };
+    reader.onerror = () => reject(new Error("讀取檔案失敗"));
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Logs ──────────────────────────────────────────────────
+async function loadLogs() {
+  try {
+    const data = await api({ action: "getLogs", token });
+    if (!data.success) return;
+    document.getElementById("log-section").style.display = "block";
+    const tbody = document.getElementById("log-tbody");
+    if (!data.logs.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">尚無紀錄</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.logs.map(l => `
+      <tr>
+        <td>${l.timestamp}</td>
+        <td title="${l.filename}">${l.filename}</td>
+        <td>${l.fileSizeMb} MB</td>
+        <td style="color:var(--muted)">${l.fileType}</td>
+        <td><a href="${l.fileLink}" target="_blank" rel="noopener"
+               style="color:var(--accent3);text-decoration:none">開啟 ↗</a></td>
+        <td><span class="badge">${l.status}</span></td>
+      </tr>
+    `).join("");
+  } catch (e) { /* silent */ }
+}
+
+// ── UI Helpers ────────────────────────────────────────────
+function showView(name) {
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  document.getElementById("view-" + name).classList.add("active");
+}
+
+function updateStatus(online) {
+  document.getElementById("status-dot").className = "status-dot" + (online ? " online" : "");
+  document.getElementById("status-label").textContent = online ? "連線中" : "離線";
+}
+
+function setLoading(btnId, textId, loading, label) {
+  const btn = document.getElementById(btnId);
+  const txt = document.getElementById(textId);
+  btn.disabled = loading;
+  if (loading) {
+    txt.style.display = "none";
+    const sp = document.createElement("div");
+    sp.className = "spinner";
+    sp.id = btnId + "-spinner";
+    btn.prepend(sp);
+  } else {
+    const sp = document.getElementById(btnId + "-spinner");
+    if (sp) sp.remove();
+    txt.style.display = "";
+    txt.textContent = label;
+    if (btnId === "upload-btn") btn.disabled = !selectedFile;
+  }
+}
+
+function showProgress(pct) {
+  document.getElementById("progress-wrap").style.display = "block";
+  document.getElementById("progress-bar").style.width = pct + "%";
+}
+
+function hideProgress() {
+  document.getElementById("progress-wrap").style.display = "none";
+  document.getElementById("progress-bar").style.width = "0%";
+}
+
+function toast(msg, type = "info") {
+  const icons = { success: "✅", error: "❌", info: "ℹ️" };
+  const wrap = document.getElementById("toast-wrap");
+  const el = document.createElement("div");
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span class="toast-icon">${icons[type]}</span><span class="toast-msg">${msg}</span>`;
+  wrap.prepend(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+function fileIcon(mimeType) {
+  if (mimeType.startsWith("image/")) return "🖼️";
+  if (mimeType.startsWith("video/")) return "🎬";
+  if (mimeType.startsWith("audio/")) return "🎵";
+  if (mimeType.includes("pdf")) return "📕";
+  if (mimeType.includes("zip") || mimeType.includes("archive")) return "🗜️";
+  if (mimeType.includes("word") || mimeType.includes("document")) return "📝";
+  if (mimeType.includes("sheet") || mimeType.includes("excel")) return "📊";
+  return "📄";
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+}
+</script>
+</body>
+</html>
