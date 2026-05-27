@@ -8,545 +8,336 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
-    --bg: #0c0c0f;
-    --surface: #141418;
-    --surface2: #1c1c22;
-    --border: #2a2a35;
-    --accent: #7c6bff;
-    --accent2: #ff6b9d;
-    --accent3: #6bffda;
-    --text: #e8e8f0;
-    --muted: #6b6b80;
-    --danger: #ff4d6d;
-    --success: #4dffc3;
-    --font-display: 'Syne', sans-serif;
-    --font-mono: 'DM Mono', monospace;
-    --radius: 12px;
-    --radius-lg: 20px;
+    --bg:#0c0c0f; --surface:#141418; --surface2:#1c1c22; --border:#2a2a35;
+    --accent:#7c6bff; --accent3:#6bffda; --text:#e8e8f0; --muted:#6b6b80;
+    --danger:#ff4d6d; --success:#4dffc3;
+    --fd:'Syne',sans-serif; --fm:'DM Mono',monospace;
+    --r:12px; --rl:20px;
   }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-mono);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background:
-      radial-gradient(ellipse 60% 50% at 20% 20%, rgba(124,107,255,0.08) 0%, transparent 70%),
-      radial-gradient(ellipse 50% 60% at 80% 80%, rgba(107,255,218,0.05) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .app { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
-
-  header {
-    padding: 28px 40px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .logo {
-    font-family: var(--font-display);
-    font-weight: 800;
-    font-size: 1.2rem;
-    letter-spacing: 0.05em;
-    background: linear-gradient(135deg, var(--accent), var(--accent3));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .status-dot {
-    width: 8px; height: 8px; border-radius: 50%; background: var(--muted);
-    display: inline-block; margin-right: 8px; transition: background 0.3s;
-  }
-  .status-dot.online { background: var(--success); box-shadow: 0 0 8px var(--success); }
-  .status-label { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; }
-
-  main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
-  .container { width: 100%; max-width: 560px; }
-
-  .page-title { font-family: var(--font-display); font-size: clamp(2rem, 6vw, 3.2rem); font-weight: 800; line-height: 1.1; margin-bottom: 8px; }
-  .page-subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 40px; letter-spacing: 0.05em; }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 32px;
-    position: relative;
-    overflow: hidden;
-  }
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; height: 1px;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    opacity: 0.5;
-  }
-
-  .section-label {
-    font-size: 0.7rem; letter-spacing: 0.15em; color: var(--muted);
-    text-transform: uppercase; margin-bottom: 16px;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-  .field { margin-bottom: 20px; }
-  label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 8px; letter-spacing: 0.06em; }
-
-  input[type="password"], input[type="text"] {
-    width: 100%; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 12px 16px; color: var(--text);
-    font-family: var(--font-mono); font-size: 0.9rem; outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,107,255,0.15); }
-
-  .btn {
-    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    width: 100%; padding: 13px 24px; border: none; border-radius: var(--radius);
-    font-family: var(--font-mono); font-size: 0.88rem; font-weight: 500;
-    letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s;
-  }
-  .btn-primary { background: linear-gradient(135deg, var(--accent), #5a4de0); color: #fff; }
-  .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(124,107,255,0.35); }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 0.78rem; padding: 8px 16px; width: auto; }
-  .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
-
-  .drop-zone {
-    border: 2px dashed var(--border); border-radius: var(--radius-lg);
-    padding: 48px 24px; text-align: center; cursor: pointer;
-    transition: all 0.25s; margin-bottom: 24px;
-  }
-  .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: rgba(124,107,255,0.05); }
-  .drop-zone.has-file { border-color: var(--accent3); background: rgba(107,255,218,0.04); }
-  .drop-icon { font-size: 2.5rem; margin-bottom: 12px; display: block; transition: transform 0.2s; }
-  .drop-zone:hover .drop-icon { transform: translateY(-4px); }
-  .drop-title { font-family: var(--font-display); font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
-  .drop-hint { font-size: 0.75rem; color: var(--muted); line-height: 1.6; }
-  #file-input { display: none; }
-
-  .file-preview {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 14px 16px; display: none; align-items: center; gap: 12px;
-    margin-bottom: 20px; animation: slideIn 0.2s ease;
-  }
-  .file-preview.show { display: flex; }
-  .file-icon { font-size: 1.5rem; flex-shrink: 0; }
-  .file-meta { flex: 1; min-width: 0; }
-  .file-name { font-size: 0.88rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .file-size { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
-  .remove-file { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 1.2rem; padding: 4px; border-radius: 6px; transition: color 0.2s; flex-shrink: 0; }
-  .remove-file:hover { color: var(--danger); }
-
-  .progress-wrap { background: var(--surface2); border-radius: 100px; height: 4px; overflow: hidden; margin: 16px 0; display: none; }
-  .progress-bar { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--accent), var(--accent3)); width: 0%; transition: width 0.3s ease; }
-
-  .config-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
-  .chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 100px; padding: 4px 12px; font-size: 0.72rem; color: var(--muted); letter-spacing: 0.04em; }
-  .chip span { color: var(--accent3); }
-
-  .toast-wrap { position: fixed; top: 24px; right: 24px; display: flex; flex-direction: column; gap: 10px; z-index: 999; }
-  .toast { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 20px; font-size: 0.83rem; max-width: 340px; display: flex; align-items: flex-start; gap: 10px; animation: toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1); border-left: 3px solid var(--muted); }
-  .toast.success { border-left-color: var(--success); }
-  .toast.error { border-left-color: var(--danger); }
-  .toast.info { border-left-color: var(--accent); }
-  .toast-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
-  .toast-msg { line-height: 1.5; }
-
-  .result-card { background: var(--surface2); border: 1px solid var(--accent3); border-radius: var(--radius); padding: 16px; margin-top: 16px; display: none; animation: slideIn 0.3s ease; }
-  .result-card.show { display: block; }
-  .result-label { font-size: 0.7rem; color: var(--accent3); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
-  .result-link { color: var(--text); text-decoration: none; font-size: 0.82rem; word-break: break-all; display: block; line-height: 1.5; }
-  .result-link:hover { color: var(--accent3); }
-
-  .log-section { margin-top: 32px; border-top: 1px solid var(--border); padding-top: 24px; }
-  .log-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-  .log-title { font-family: var(--font-display); font-size: 0.9rem; font-weight: 700; }
-  .log-table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
-  table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
-  th { background: var(--surface2); padding: 10px 14px; text-align: left; color: var(--muted); font-weight: 400; letter-spacing: 0.06em; white-space: nowrap; }
-  td { padding: 10px 14px; border-top: 1px solid var(--border); white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
-  tr:hover td { background: rgba(124,107,255,0.04); }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 100px; font-size: 0.68rem; background: rgba(77,255,195,0.12); color: var(--success); }
-
-  .view { display: none; }
-  .view.active { display: block; }
-  .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
-
-  @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes toastIn { from { opacity: 0; transform: translateX(16px) scale(0.95); } to { opacity: 1; transform: translateX(0) scale(1); } }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
-
-  @media (max-width: 600px) { header { padding: 20px; } .card { padding: 22px; } .drop-zone { padding: 36px 20px; } }
+  body { background:var(--bg); color:var(--text); font-family:var(--fm); min-height:100vh; overflow-x:hidden; }
+  body::before { content:''; position:fixed; inset:0; background: radial-gradient(ellipse 60% 50% at 20% 20%,rgba(124,107,255,.08) 0%,transparent 70%), radial-gradient(ellipse 50% 60% at 80% 80%,rgba(107,255,218,.05) 0%,transparent 70%); pointer-events:none; z-index:0; }
+  .app { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; }
+  header { padding:28px 40px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
+  .logo { font-family:var(--fd); font-weight:800; font-size:1.2rem; letter-spacing:.05em; background:linear-gradient(135deg,var(--accent),var(--accent3)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .sdot { width:8px; height:8px; border-radius:50%; background:var(--muted); display:inline-block; margin-right:8px; transition:background .3s; }
+  .sdot.on { background:var(--success); box-shadow:0 0 8px var(--success); }
+  .slabel { font-size:.75rem; color:var(--muted); letter-spacing:.08em; }
+  main { flex:1; display:flex; align-items:center; justify-content:center; padding:40px 20px; }
+  .container { width:100%; max-width:560px; }
+  .ptitle { font-family:var(--fd); font-size:clamp(2rem,6vw,3.2rem); font-weight:800; line-height:1.1; margin-bottom:8px; }
+  .psub { color:var(--muted); font-size:.85rem; margin-bottom:40px; letter-spacing:.05em; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--rl); padding:32px; position:relative; overflow:hidden; }
+  .card::before { content:''; position:absolute; top:0;left:0;right:0; height:1px; background:linear-gradient(90deg,transparent,var(--accent),transparent); opacity:.5; }
+  .slabel2 { font-size:.7rem; letter-spacing:.15em; color:var(--muted); text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+  .slabel2::after { content:''; flex:1; height:1px; background:var(--border); }
+  .field { margin-bottom:20px; }
+  label { display:block; font-size:.78rem; color:var(--muted); margin-bottom:8px; letter-spacing:.06em; }
+  input[type=password], input[type=text] { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--r); padding:12px 16px; color:var(--text); font-family:var(--fm); font-size:.9rem; outline:none; transition:border-color .2s,box-shadow .2s; }
+  input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(124,107,255,.15); }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:13px 24px; border:none; border-radius:var(--r); font-family:var(--fm); font-size:.88rem; font-weight:500; letter-spacing:.05em; cursor:pointer; transition:all .2s; }
+  .bp { background:linear-gradient(135deg,var(--accent),#5a4de0); color:#fff; }
+  .bp:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 8px 24px rgba(124,107,255,.35); }
+  .bp:disabled { opacity:.5; cursor:not-allowed; }
+  .bg { background:transparent; border:1px solid var(--border); color:var(--muted); font-size:.78rem; padding:8px 16px; width:auto; }
+  .bg:hover { border-color:var(--accent); color:var(--text); }
+  .dz { border:2px dashed var(--border); border-radius:var(--rl); padding:48px 24px; text-align:center; cursor:pointer; transition:all .25s; margin-bottom:24px; }
+  .dz:hover,.dz.drag { border-color:var(--accent); background:rgba(124,107,255,.05); }
+  .dz.has { border-color:var(--accent3); background:rgba(107,255,218,.04); }
+  .di { font-size:2.5rem; margin-bottom:12px; display:block; transition:transform .2s; }
+  .dz:hover .di { transform:translateY(-4px); }
+  .dt { font-family:var(--fd); font-size:1rem; font-weight:700; margin-bottom:6px; }
+  .dh { font-size:.75rem; color:var(--muted); line-height:1.6; }
+  #fi { display:none; }
+  .fp { background:var(--surface2); border:1px solid var(--border); border-radius:var(--r); padding:14px 16px; display:none; align-items:center; gap:12px; margin-bottom:20px; animation:si .2s ease; }
+  .fp.show { display:flex; }
+  .fim { flex:1; min-width:0; }
+  .fn { font-size:.88rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .fs { font-size:.72rem; color:var(--muted); margin-top:2px; }
+  .rf { background:none; border:none; cursor:pointer; color:var(--muted); font-size:1.2rem; padding:4px; border-radius:6px; transition:color .2s; flex-shrink:0; }
+  .rf:hover { color:var(--danger); }
+  .pw { background:var(--surface2); border-radius:100px; height:4px; overflow:hidden; margin:16px 0; display:none; }
+  .pb { height:100%; border-radius:100px; background:linear-gradient(90deg,var(--accent),var(--accent3)); width:0%; transition:width .3s ease; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
+  .chip { background:var(--surface2); border:1px solid var(--border); border-radius:100px; padding:4px 12px; font-size:.72rem; color:var(--muted); }
+  .chip span { color:var(--accent3); }
+  .tw { position:fixed; top:24px; right:24px; display:flex; flex-direction:column; gap:10px; z-index:999; }
+  .toast { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:14px 20px; font-size:.83rem; max-width:340px; display:flex; align-items:flex-start; gap:10px; animation:ti .3s cubic-bezier(.34,1.56,.64,1); border-left:3px solid var(--muted); }
+  .toast.s { border-left-color:var(--success); }
+  .toast.e { border-left-color:var(--danger); }
+  .toast.i { border-left-color:var(--accent); }
+  .rc { background:var(--surface2); border:1px solid var(--accent3); border-radius:var(--r); padding:16px; margin-top:16px; display:none; animation:si .3s ease; }
+  .rc.show { display:block; }
+  .rl2 { font-size:.7rem; color:var(--accent3); letter-spacing:.12em; text-transform:uppercase; margin-bottom:8px; }
+  .rl2 a { color:var(--text); text-decoration:none; font-size:.82rem; word-break:break-all; display:block; line-height:1.5; }
+  .rl2 a:hover { color:var(--accent3); }
+  .ls { margin-top:32px; border-top:1px solid var(--border); padding-top:24px; }
+  .lh { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .lt { font-family:var(--fd); font-size:.9rem; font-weight:700; }
+  .ltw { overflow-x:auto; border-radius:var(--r); border:1px solid var(--border); }
+  table { width:100%; border-collapse:collapse; font-size:.75rem; }
+  th { background:var(--surface2); padding:10px 14px; text-align:left; color:var(--muted); font-weight:400; letter-spacing:.06em; white-space:nowrap; }
+  td { padding:10px 14px; border-top:1px solid var(--border); white-space:nowrap; max-width:200px; overflow:hidden; text-overflow:ellipsis; }
+  tr:hover td { background:rgba(124,107,255,.04); }
+  .badge { display:inline-block; padding:2px 8px; border-radius:100px; font-size:.68rem; background:rgba(77,255,195,.12); color:var(--success); }
+  .view { display:none; }
+  .view.active { display:block; }
+  .tb { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; }
+  @keyframes si { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes ti { from{opacity:0;transform:translateX(16px) scale(.95)} to{opacity:1;transform:translateX(0) scale(1)} }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .6s linear infinite; }
+  @media(max-width:600px){ header{padding:20px} .card{padding:22px} .dz{padding:36px 20px} }
 </style>
 </head>
 <body>
 <div class="app">
   <header>
     <span class="logo">UPLOAD /</span>
-    <div>
-      <span class="status-dot" id="status-dot"></span>
-      <span class="status-label" id="status-label">離線</span>
-    </div>
+    <div><span class="sdot" id="sdot"></span><span class="slabel" id="slabel">離線</span></div>
   </header>
+  <main><div class="container">
 
-  <main>
-    <div class="container">
-
-      <!-- LOGIN -->
-      <div class="view active" id="view-login">
-        <div class="page-title">檔案<br>上傳中心</div>
-        <div class="page-subtitle">// 請輸入密碼以繼續</div>
-        <div class="card">
-          <div class="section-label">身份驗證</div>
-          <div class="field">
-            <label>ACCESS PASSWORD</label>
-            <input type="password" id="password-input" placeholder="輸入密碼…" autocomplete="current-password">
-          </div>
-          <button class="btn btn-primary" id="login-btn" onclick="login()">
-            <span id="login-btn-text">驗證登入</span>
-          </button>
+    <!-- LOGIN -->
+    <div class="view active" id="view-login">
+      <div class="ptitle">檔案<br>上傳中心</div>
+      <div class="psub">// 請輸入密碼以繼續</div>
+      <div class="card">
+        <div class="slabel2">身份驗證</div>
+        <div class="field">
+          <label>ACCESS PASSWORD</label>
+          <input type="password" id="pw" placeholder="輸入密碼…" autocomplete="current-password">
         </div>
+        <button class="btn bp" id="lbtn" onclick="login()"><span id="lbtxt">驗證登入</span></button>
       </div>
-
-      <!-- UPLOAD -->
-      <div class="view" id="view-upload">
-        <div class="top-bar">
-          <div>
-            <div class="page-title" style="font-size:1.8rem;">上傳檔案</div>
-            <div class="page-subtitle" style="margin-bottom:0">// 拖曳或點擊選擇檔案</div>
-          </div>
-          <button class="btn btn-ghost" onclick="logout()">登出</button>
-        </div>
-
-        <div class="card">
-          <div class="config-chips" id="config-chips"></div>
-          <div class="section-label">選擇檔案</div>
-
-          <div class="drop-zone" id="drop-zone"
-               onclick="document.getElementById('file-input').click()"
-               ondragover="handleDragOver(event)"
-               ondragleave="handleDragLeave(event)"
-               ondrop="handleDrop(event)">
-            <span class="drop-icon">📁</span>
-            <div class="drop-title">拖曳檔案至此</div>
-            <div class="drop-hint">或點擊選擇檔案<br><span id="hint-size"></span></div>
-          </div>
-
-          <input type="file" id="file-input" onchange="handleFileSelect(event)">
-
-          <div class="file-preview" id="file-preview">
-            <span class="file-icon" id="preview-icon">📄</span>
-            <div class="file-meta">
-              <div class="file-name" id="preview-name"></div>
-              <div class="file-size" id="preview-size"></div>
-            </div>
-            <button class="remove-file" onclick="removeFile()">✕</button>
-          </div>
-
-          <div class="progress-wrap" id="progress-wrap">
-            <div class="progress-bar" id="progress-bar"></div>
-          </div>
-
-          <button class="btn btn-primary" id="upload-btn" onclick="uploadFile()" disabled>
-            <span id="upload-btn-text">上傳檔案</span>
-          </button>
-
-          <div class="result-card" id="result-card">
-            <div class="result-label">✅ 上傳成功 — 檔案連結</div>
-            <a class="result-link" id="result-link" target="_blank" rel="noopener"></a>
-          </div>
-        </div>
-
-        <div class="log-section" id="log-section" style="display:none">
-          <div class="log-header">
-            <div class="log-title">上傳紀錄</div>
-            <button class="btn btn-ghost" onclick="loadLogs()">重新整理</button>
-          </div>
-          <div class="log-table-wrap">
-            <table>
-              <thead>
-                <tr><th>時間</th><th>檔名</th><th>大小</th><th>類型</th><th>連結</th><th>狀態</th></tr>
-              </thead>
-              <tbody id="log-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
     </div>
-  </main>
-</div>
 
-<div class="toast-wrap" id="toast-wrap"></div>
+    <!-- UPLOAD -->
+    <div class="view" id="view-upload">
+      <div class="tb">
+        <div>
+          <div class="ptitle" style="font-size:1.8rem">上傳檔案</div>
+          <div class="psub" style="margin-bottom:0">// 拖曳或點擊選擇</div>
+        </div>
+        <button class="btn bg" onclick="logout()">登出</button>
+      </div>
+      <div class="card">
+        <div class="chips" id="chips"></div>
+        <div class="slabel2">選擇檔案</div>
+        <div class="dz" id="dz" onclick="document.getElementById('fi').click()"
+             ondragover="dov(event)" ondragleave="dol()" ondrop="dop(event)">
+          <span class="di">📁</span>
+          <div class="dt">拖曳檔案至此</div>
+          <div class="dh">或點擊選擇檔案<br><span id="hint"></span></div>
+        </div>
+        <input type="file" id="fi" onchange="fsel(event)">
+        <div class="fp" id="fp">
+          <span id="fic" style="font-size:1.5rem;flex-shrink:0">📄</span>
+          <div class="fim"><div class="fn" id="fn"></div><div class="fs" id="fsize"></div></div>
+          <button class="rf" onclick="rmFile()">✕</button>
+        </div>
+        <div class="pw" id="pw2"><div class="pb" id="pb"></div></div>
+        <button class="btn bp" id="ubtn" onclick="upload()" disabled><span id="ubtxt">上傳檔案</span></button>
+        <div class="rc" id="rc">
+          <div class="rl2">✅ 上傳成功 — 點擊開啟檔案<br><a id="rlink" target="_blank" rel="noopener"></a></div>
+        </div>
+      </div>
+      <div class="ls" id="ls" style="display:none">
+        <div class="lh"><div class="lt">上傳紀錄</div><button class="btn bg" onclick="loadLogs()">重新整理</button></div>
+        <div class="ltw"><table><thead><tr><th>時間</th><th>檔名</th><th>大小</th><th>類型</th><th>連結</th><th>狀態</th></tr></thead><tbody id="ltb"></tbody></table></div>
+      </div>
+    </div>
+
+  </div></main>
+</div>
+<div class="tw" id="tw"></div>
 
 <script>
-// ╔══════════════════════════════════════════════╗
-// ║  貼上你的 Apps Script 部署 URL               ║
-// ╚══════════════════════════════════════════════╝
-const API_URL = "https://script.google.com/macros/s/AKfycbxeSChA6cmE5Mz2rdytXSYkKaLIZk_liebrs-zBTTBTt_oLkmTJSMxiHH-Ab4GJKotl/exec";
+// ╔══════════════════════════════════════════════════════════╗
+// ║  貼上你的 Apps Script 部署 URL（每次重新部署 URL 不變）  ║
+// ╚══════════════════════════════════════════════════════════╝
+const API = "https://script.google.com/macros/s/AKfycbw-TlSMO2TM8H6VNTDVHDdwDfmDvEkg2ckcdkgRn3vF4dLghlmamcpnCa78v1kiepfC/exec";
 
-// ── State ─────────────────────────────────────
-let token = sessionStorage.getItem("upload_token") || null;
-let tokenExpiry = Number(sessionStorage.getItem("upload_expiry")) || 0;
-let uploadConfig = null;
-let selectedFile = null;
+let tok = sessionStorage.getItem("tok") || null;
+let tokExp = Number(sessionStorage.getItem("tokExp")) || 0;
+let cfg = null;
+let file = null;
+let cbIdx = 0;
 
-// ── 核心 API 呼叫（全部用 GET + JSONP-style fetch）────────────
-// GAS 的 doGet 天生支援 CORS，不會有 preflight 問題
-async function api(params) {
-  const url = new URL(API_URL);
-  Object.entries(params).forEach(([k, v]) => {
-    if (k !== "data") url.searchParams.set(k, v); // base64 另外處理
+// ── JSONP 呼叫（完全不用 fetch，完全不受 CORS 限制）──────────
+function jsonp(params) {
+  return new Promise((resolve, reject) => {
+    const name = "__cb" + (cbIdx++);
+    const script = document.createElement("script");
+    const url = new URL(API);
+    url.searchParams.set("callback", name);
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    const timer = setTimeout(() => { cleanup(); reject(new Error("Timeout")); }, 30000);
+    window[name] = (data) => { cleanup(); resolve(data); };
+    function cleanup() { clearTimeout(timer); delete window[name]; if (script.parentNode) script.parentNode.removeChild(script); }
+    script.onerror = () => { cleanup(); reject(new Error("Script load error")); };
+    script.src = url.toString();
+    document.head.appendChild(script);
   });
-
-  // base64 資料太長，改用 form-encoded POST with no-cors 不行，
-  // 這裡用 fetch GET，base64 append 到 URL（GAS URL 無長度限制）
-  if (params.data) url.searchParams.set("data", params.data);
-
-  const res = await fetch(url.toString(), {
-    method: "GET",
-    redirect: "follow"
-  });
-  return res.json();
 }
 
-// ── Init ──────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────
 window.addEventListener("DOMContentLoaded", () => {
-  if (token && Date.now() < tokenExpiry) {
-    showView("upload");
-    fetchConfig();
-    updateStatus(true);
-  } else {
-    clearSession();
-    updateStatus(false);
-  }
-  document.getElementById("password-input").addEventListener("keydown", e => {
-    if (e.key === "Enter") login();
-  });
+  if (tok && Date.now() < tokExp) { showView("upload"); fetchCfg(); setOnline(true); }
+  else { clearSess(); setOnline(false); }
+  document.getElementById("pw").addEventListener("keydown", e => { if (e.key === "Enter") login(); });
 });
 
-// ── Auth ──────────────────────────────────────
+// ── Auth ──────────────────────────────────────────────────────
 async function login() {
-  const pw = document.getElementById("password-input").value.trim();
-  if (!pw) return toast("請輸入密碼", "error");
-  setLoading("login-btn", "login-btn-text", true, "驗證中…");
+  const pw = document.getElementById("pw").value.trim();
+  if (!pw) return toast("請輸入密碼", "e");
+  setBusy("lbtn","lbtxt",true,"驗證中…");
   try {
-    const data = await api({ action: "login", password: pw });
-    if (data.success) {
-      token = data.token;
-      tokenExpiry = data.expiresAt;
-      sessionStorage.setItem("upload_token", token);
-      sessionStorage.setItem("upload_expiry", tokenExpiry);
-      uploadConfig = data.config;
-      showView("upload");
-      updateStatus(true);
-      applyConfig();
-      toast("登入成功", "success");
-      loadLogs();
+    const d = await jsonp({ action:"login", password:pw });
+    if (d.success) {
+      tok = d.token; tokExp = d.expiresAt; cfg = d.config;
+      sessionStorage.setItem("tok", tok);
+      sessionStorage.setItem("tokExp", tokExp);
+      showView("upload"); setOnline(true); applyCfg();
+      toast("登入成功","s"); loadLogs();
     } else {
-      toast(data.error || "密碼錯誤", "error");
+      toast(d.error || "密碼錯誤","e");
     }
-  } catch (e) {
-    toast("無法連線：" + e.message, "error");
+  } catch(e) { toast("連線失敗：" + e.message,"e"); }
+  setBusy("lbtn","lbtxt",false,"驗證登入");
+}
+
+function logout() { clearSess(); showView("login"); setOnline(false); document.getElementById("pw").value=""; toast("已登出","i"); }
+function clearSess() { tok=null; tokExp=0; cfg=null; sessionStorage.removeItem("tok"); sessionStorage.removeItem("tokExp"); }
+async function fetchCfg() {
+  try { const d = await jsonp({action:"getConfig",token:tok}); if(d.success){cfg=d.config;applyCfg();loadLogs();} else logout(); } catch(e){}
+}
+
+// ── Config ────────────────────────────────────────────────────
+function applyCfg() {
+  if (!cfg) return;
+  document.getElementById("chips").innerHTML =
+    `<div class="chip">上限 <span>${cfg.maxFileSizeMb} MB</span></div>
+     <div class="chip">允許 <span>${cfg.allowedExtensions||'所有類型'}</span></div>`;
+  document.getElementById("hint").textContent =
+    `格式：${cfg.allowedExtensions||'所有'} · 最大 ${cfg.maxFileSizeMb} MB`;
+}
+
+// ── File ──────────────────────────────────────────────────────
+function fsel(e) { setFile(e.target.files[0]); }
+function dov(e) { e.preventDefault(); document.getElementById("dz").classList.add("drag"); }
+function dol()  { document.getElementById("dz").classList.remove("drag"); }
+function dop(e) { e.preventDefault(); dol(); if(e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); }
+
+function setFile(f) {
+  if (!f) return;
+  const ext = f.name.split(".").pop().toLowerCase();
+  if (cfg?.allowedExtensions) {
+    const ok = cfg.allowedExtensions.split(",").map(s=>s.trim().toLowerCase()).filter(Boolean);
+    if (ok.length && !ok.includes(ext)) { toast(`不允許：.${ext}`,"e"); return; }
   }
-  setLoading("login-btn", "login-btn-text", false, "驗證登入");
+  const mb = f.size/1048576;
+  if (cfg && mb > cfg.maxFileSizeMb) { toast(`${mb.toFixed(1)} MB 超過上限`,"e"); return; }
+  file = f;
+  document.getElementById("fic").textContent = icon(f.type);
+  document.getElementById("fn").textContent = f.name;
+  document.getElementById("fsize").textContent = fmtSize(f.size);
+  document.getElementById("fp").classList.add("show");
+  document.getElementById("dz").classList.add("has");
+  document.getElementById("ubtn").disabled = false;
+  document.getElementById("rc").classList.remove("show");
 }
 
-function logout() {
-  clearSession();
-  showView("login");
-  updateStatus(false);
-  document.getElementById("password-input").value = "";
-  toast("已登出", "info");
+function rmFile() {
+  file=null; document.getElementById("fi").value="";
+  document.getElementById("fp").classList.remove("show");
+  document.getElementById("dz").classList.remove("has");
+  document.getElementById("ubtn").disabled=true;
 }
 
-function clearSession() {
-  token = null; tokenExpiry = 0; uploadConfig = null;
-  sessionStorage.removeItem("upload_token");
-  sessionStorage.removeItem("upload_expiry");
-}
-
-async function fetchConfig() {
+// ── Upload ────────────────────────────────────────────────────
+async function upload() {
+  if (!file || !tok || Date.now()>tokExp) { logout(); return; }
+  setBusy("ubtn","ubtxt",true,"上傳中…"); prog(10);
   try {
-    const data = await api({ action: "getConfig", token });
-    if (data.success) { uploadConfig = data.config; applyConfig(); loadLogs(); }
-    else logout();
-  } catch (e) {}
+    const b64 = await toB64(file, p => prog(10+p*60));
+    prog(75);
+    const d = await jsonp({ action:"upload", token:tok, filename:file.name, mime:file.type||"application/octet-stream", data:b64 });
+    prog(100);
+    if (d.success) {
+      toast(`✅ ${d.filename} 上傳成功`,"s");
+      const a = document.getElementById("rlink");
+      a.href = d.fileLink; a.textContent = d.fileLink;
+      document.getElementById("rc").classList.add("show");
+      rmFile(); setTimeout(loadLogs, 1500);
+    } else { toast(d.error||"上傳失敗","e"); }
+  } catch(e) { toast("錯誤："+e.message,"e"); }
+  setTimeout(()=>prog(-1), 900);
+  setBusy("ubtn","ubtxt",false,"上傳檔案");
 }
 
-// ── Config ────────────────────────────────────
-function applyConfig() {
-  if (!uploadConfig) return;
-  document.getElementById("config-chips").innerHTML = `
-    <div class="chip">上限 <span>${uploadConfig.maxFileSizeMb} MB</span></div>
-    <div class="chip">允許 <span>${uploadConfig.allowedExtensions || '所有類型'}</span></div>
-  `;
-  document.getElementById("hint-size").textContent =
-    `允許格式：${uploadConfig.allowedExtensions || '所有'} · 最大 ${uploadConfig.maxFileSizeMb} MB`;
-}
-
-// ── File ──────────────────────────────────────
-function handleFileSelect(e) { setFile(e.target.files[0]); }
-function handleDragOver(e) { e.preventDefault(); document.getElementById("drop-zone").classList.add("dragover"); }
-function handleDragLeave() { document.getElementById("drop-zone").classList.remove("dragover"); }
-function handleDrop(e) { e.preventDefault(); document.getElementById("drop-zone").classList.remove("dragover"); if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); }
-
-function setFile(file) {
-  if (!file) return;
-  const ext = file.name.split(".").pop().toLowerCase();
-  if (uploadConfig?.allowedExtensions) {
-    const allowed = uploadConfig.allowedExtensions.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
-    if (allowed.length && !allowed.includes(ext)) { toast(`不允許的副檔名：.${ext}`, "error"); return; }
-  }
-  const sizeMb = file.size / (1024 * 1024);
-  if (uploadConfig && sizeMb > uploadConfig.maxFileSizeMb) {
-    toast(`檔案 ${sizeMb.toFixed(1)} MB 超過上限 ${uploadConfig.maxFileSizeMb} MB`, "error"); return;
-  }
-  selectedFile = file;
-  document.getElementById("preview-icon").textContent = fileIcon(file.type);
-  document.getElementById("preview-name").textContent = file.name;
-  document.getElementById("preview-size").textContent = formatSize(file.size);
-  document.getElementById("file-preview").classList.add("show");
-  document.getElementById("drop-zone").classList.add("has-file");
-  document.getElementById("upload-btn").disabled = false;
-  document.getElementById("result-card").classList.remove("show");
-}
-
-function removeFile() {
-  selectedFile = null;
-  document.getElementById("file-input").value = "";
-  document.getElementById("file-preview").classList.remove("show");
-  document.getElementById("drop-zone").classList.remove("has-file");
-  document.getElementById("upload-btn").disabled = true;
-}
-
-// ── Upload ────────────────────────────────────
-async function uploadFile() {
-  if (!selectedFile || !token || Date.now() > tokenExpiry) { logout(); return; }
-  setLoading("upload-btn", "upload-btn-text", true, "上傳中…");
-  showProgress(10);
-  try {
-    const base64 = await readFileBase64(selectedFile, p => showProgress(10 + p * 60));
-    showProgress(75);
-    const data = await api({
-      action: "upload", token,
-      filename: selectedFile.name,
-      mime: selectedFile.type || "application/octet-stream",
-      data: base64
-    });
-    showProgress(100);
-    if (data.success) {
-      toast(`✅ ${data.filename} 上傳成功`, "success");
-      const link = document.getElementById("result-link");
-      link.href = data.fileLink;
-      link.textContent = data.fileLink;
-      document.getElementById("result-card").classList.add("show");
-      removeFile();
-      setTimeout(loadLogs, 1500);
-    } else {
-      toast(data.error || "上傳失敗", "error");
-    }
-  } catch (e) {
-    toast("上傳錯誤：" + e.message, "error");
-  }
-  setTimeout(hideProgress, 800);
-  setLoading("upload-btn", "upload-btn-text", false, "上傳檔案");
-}
-
-function readFileBase64(file, onProgress) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onprogress = e => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
-    reader.onload = () => resolve(reader.result.split(",")[1]);
-    reader.onerror = () => reject(new Error("讀取失敗"));
-    reader.readAsDataURL(file);
+function toB64(f, onProg) {
+  return new Promise((res,rej) => {
+    const r = new FileReader();
+    r.onprogress = e => { if(e.lengthComputable) onProg(e.loaded/e.total); };
+    r.onload = () => res(r.result.split(",")[1]);
+    r.onerror = () => rej(new Error("讀取失敗"));
+    r.readAsDataURL(f);
   });
 }
 
-// ── Logs ──────────────────────────────────────
+// ── Logs ──────────────────────────────────────────────────────
 async function loadLogs() {
   try {
-    const data = await api({ action: "getLogs", token });
-    if (!data.success) return;
-    document.getElementById("log-section").style.display = "block";
-    const tbody = document.getElementById("log-tbody");
-    if (!data.logs.length) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">尚無紀錄</td></tr>`;
-      return;
-    }
-    tbody.innerHTML = data.logs.map(l => `
-      <tr>
-        <td>${l.timestamp}</td>
-        <td title="${l.filename}">${l.filename}</td>
-        <td>${l.fileSizeMb} MB</td>
-        <td style="color:var(--muted)">${l.fileType}</td>
-        <td><a href="${l.fileLink}" target="_blank" rel="noopener" style="color:var(--accent3);text-decoration:none">開啟 ↗</a></td>
-        <td><span class="badge">${l.status}</span></td>
-      </tr>`).join("");
-  } catch (e) {}
+    const d = await jsonp({action:"getLogs",token:tok});
+    if (!d.success) return;
+    document.getElementById("ls").style.display = "block";
+    const tb = document.getElementById("ltb");
+    if (!d.logs.length) { tb.innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">尚無紀錄</td></tr>`; return; }
+    tb.innerHTML = d.logs.map(l=>`<tr>
+      <td>${l.timestamp}</td><td title="${l.filename}">${l.filename}</td>
+      <td>${l.fileSizeMb} MB</td><td style="color:var(--muted)">${l.fileType}</td>
+      <td><a href="${l.fileLink}" target="_blank" rel="noopener" style="color:var(--accent3);text-decoration:none">開啟↗</a></td>
+      <td><span class="badge">${l.status}</span></td></tr>`).join("");
+  } catch(e){}
 }
 
-// ── UI Helpers ────────────────────────────────
-function showView(name) { document.querySelectorAll(".view").forEach(v => v.classList.remove("active")); document.getElementById("view-" + name).classList.add("active"); }
-function updateStatus(online) { document.getElementById("status-dot").className = "status-dot" + (online ? " online" : ""); document.getElementById("status-label").textContent = online ? "連線中" : "離線"; }
-function showProgress(pct) { document.getElementById("progress-wrap").style.display = "block"; document.getElementById("progress-bar").style.width = pct + "%"; }
-function hideProgress() { document.getElementById("progress-wrap").style.display = "none"; document.getElementById("progress-bar").style.width = "0%"; }
-
-function setLoading(btnId, textId, loading, label) {
-  const btn = document.getElementById(btnId);
-  const txt = document.getElementById(textId);
-  btn.disabled = loading;
-  if (loading) {
-    txt.style.display = "none";
-    const sp = document.createElement("div"); sp.className = "spinner"; sp.id = btnId + "-sp"; btn.prepend(sp);
-  } else {
-    const sp = document.getElementById(btnId + "-sp"); if (sp) sp.remove();
-    txt.style.display = ""; txt.textContent = label;
-    if (btnId === "upload-btn") btn.disabled = !selectedFile;
-  }
+// ── UI ────────────────────────────────────────────────────────
+function showView(n) { document.querySelectorAll(".view").forEach(v=>v.classList.remove("active")); document.getElementById("view-"+n).classList.add("active"); }
+function setOnline(on) { document.getElementById("sdot").className="sdot"+(on?" on":""); document.getElementById("slabel").textContent=on?"連線中":"離線"; }
+function prog(p) {
+  const w=document.getElementById("pw2"), b=document.getElementById("pb");
+  if(p<0){w.style.display="none";b.style.width="0%";}
+  else{w.style.display="block";b.style.width=p+"%";}
 }
-
-function toast(msg, type = "info") {
-  const icons = { success: "✅", error: "❌", info: "ℹ️" };
-  const wrap = document.getElementById("toast-wrap");
-  const el = document.createElement("div");
-  el.className = `toast ${type}`;
-  el.innerHTML = `<span class="toast-icon">${icons[type]}</span><span class="toast-msg">${msg}</span>`;
-  wrap.prepend(el);
-  setTimeout(() => el.remove(), 4500);
+function setBusy(bid,tid,busy,label) {
+  const btn=document.getElementById(bid), txt=document.getElementById(tid);
+  btn.disabled=busy;
+  if(busy){txt.style.display="none";const s=document.createElement("div");s.className="spinner";s.id=bid+"sp";btn.prepend(s);}
+  else{const s=document.getElementById(bid+"sp");if(s)s.remove();txt.style.display="";txt.textContent=label;if(bid==="ubtn")btn.disabled=!file;}
 }
-
-function fileIcon(t) {
-  if (t.startsWith("image/")) return "🖼️";
-  if (t.startsWith("video/")) return "🎬";
-  if (t.startsWith("audio/")) return "🎵";
-  if (t.includes("pdf")) return "📕";
-  if (t.includes("zip") || t.includes("archive")) return "🗜️";
-  if (t.includes("word") || t.includes("document")) return "📝";
-  if (t.includes("sheet") || t.includes("excel")) return "📊";
-  return "📄";
+function toast(msg,type="i") {
+  const icons={s:"✅",e:"❌",i:"ℹ️"};
+  const w=document.getElementById("tw"),el=document.createElement("div");
+  el.className=`toast ${type}`;
+  el.innerHTML=`<span>${icons[type]}</span><span>${msg}</span>`;
+  w.prepend(el); setTimeout(()=>el.remove(),4500);
 }
-
-function formatSize(b) {
-  if (b < 1024) return b + " B";
-  if (b < 1048576) return (b / 1024).toFixed(1) + " KB";
-  return (b / 1048576).toFixed(2) + " MB";
+function icon(t){
+  if(t.startsWith("image/"))return"🖼️";
+  if(t.startsWith("video/"))return"🎬";
+  if(t.startsWith("audio/"))return"🎵";
+  if(t.includes("pdf"))return"📕";
+  if(t.includes("zip")||t.includes("archive"))return"🗜️";
+  if(t.includes("word"))return"📝";
+  if(t.includes("sheet")||t.includes("excel"))return"📊";
+  return"📄";
+}
+function fmtSize(b){
+  if(b<1024)return b+" B";
+  if(b<1048576)return(b/1024).toFixed(1)+" KB";
+  return(b/1048576).toFixed(2)+" MB";
 }
 </script>
 </body>
