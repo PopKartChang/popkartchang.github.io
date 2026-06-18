@@ -21,7 +21,7 @@
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             text-align: center;
-            max-width: 400px;
+            max-width: 440px;
             width: 100%;
         }
         h1 {
@@ -31,7 +31,7 @@
         p {
             font-size: 0.9rem;
             color: #6b7280;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             line-height: 1.5;
         }
         .btn {
@@ -53,57 +53,112 @@
             background-color: #9ca3af;
             cursor: not-allowed;
         }
-        .status {
+        .status-box {
             margin-top: 20px;
-            font-size: 0.85rem;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.88rem;
             font-weight: 500;
+            line-height: 1.4;
         }
-        .success { color: #16a34a; }
-        .error { color: #dc2626; }
+        .state-idle { background-color: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+        .state-requested { background-color: #fffbeb; color: #d97706; border: 1px solid #fef3c7; }
+        .state-running { background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+        .last-update {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 0.78rem;
+            color: #9ca3af;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>自社在庫同期ツール</h1>
-    <p>下記のボタンを押すと同期リクエストが送信されます。<br>自動処理が開始されるまで最大30分かかります。</p>
+    <p>自社 Google スプレッドシートの在庫データを、Shopify および RCM 門戶へ自動反映します。</p>
     
-    <button id="updateBtn" class="btn" onclick="requestUpdate()">🔄 在庫情報を更新する</button>
-    <div id="statusMsg" class="status"></div>
+    <button id="updateBtn" class="btn" onclick="requestUpdate()" disabled>🔄 同期確認中...</button>
+    <div id="statusMsg" class="status-box state-running">システム状況を読み込み中...</div>
+    
+    <div class="last-update" id="lastUpdateBox" style="display: none;">
+        <div><b>前回の実行結果:</b> <span id="lastResult" style="font-weight: bold;">--</span></div>
+        <div style="margin-top: 4px;"><b>最終完了時刻:</b> <span id="lastTime">--</span></div>
+    </div>
 </div>
 
 <script>
-    // 💡 已自動填入您提供的新 GAS 網址
-    const MARKER_GAS_URL = "https://script.google.com/macros/s/AKfycbyCrHizC_eqyWiAgIf_AVH4Lsfis_kXcJN_mB2pjtRXFMygnVrfwKDBWYBryvWY594_/exec";
+    const MARKER_GAS_URL = "https://script.google.com/macros/s/AKfycbxlQ3VpuZFUcHwPc05bNf-ZHZigu4WSvzT2mHVyMr3zVgbVxvpseVNZPqURPCoPT87e/exec";
+    const btn = document.getElementById('updateBtn');
+    const msg = document.getElementById('statusMsg');
+    const lastBox = document.getElementById('lastUpdateBox');
+    const lastRes = document.getElementById('lastResult');
+    const lastTime = document.getElementById('lastTime');
+
+    // 定時輪詢狀態 (每 8 秒檢查一次伺服器與標記現況)
+    function checkStatus() {
+        fetch(`${MARKER_GAS_URL}?action=get_flag`, { method: 'GET', mode: 'cors' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.is_running) {
+                    // 伺服器正在執行
+                    btn.disabled = true;
+                    msg.className = "status-box state-running";
+                    msg.innerHTML = "🔄 <b>更新処理を実行中...</b><br>現在、サーバーが Shopify 及 RCM を更新しています。ブラウザを閉じてお待ちいただいても問題ありません。";
+                } else if (data.update_requested) {
+                    // 已發送更新要求，等待伺服器下載
+                    btn.disabled = true;
+                    msg.className = "status-box state-requested";
+                    msg.innerHTML = "⏱️ <b>同期リクエスト送信済み</b><br>同期の待機列に入りました。サーバーの処理開始をお待ちください...";
+                } else {
+                    // 閒置狀態，可點擊
+                    btn.disabled = false;
+                    msg.className = "status-box state-idle";
+                    msg.innerHTML = "✅ <b>同期準備完了</b><br>ボタンを押すと、即時同期処理を開始できます。";
+                }
+
+                // 顯示前次成功結果
+                if (data.last_run_time && data.last_run_time !== "N/A") {
+                    lastBox.style.display = "block";
+                    lastRes.textContent = data.last_result === "success" ? "成功" : "失敗";
+                    lastRes.style.color = data.last_result === "success" ? "#16a34a" : "#dc2626";
+                    
+                    const jstDate = new Date(data.last_run_time);
+                    lastTime.textContent = jstDate.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }) + " JST";
+                }
+            })
+            .catch(error => {
+                console.error("Status check failed:", error);
+            });
+    }
 
     function requestUpdate() {
-        const btn = document.getElementById('updateBtn');
-        const msg = document.getElementById('statusMsg');
-        
         btn.disabled = true;
-        msg.className = "status";
-        msg.textContent = "リクエスト送信中...";
+        msg.className = "status-box state-requested";
+        msg.innerHTML = "⏱️ 更新リクエスト送信中...";
 
-        // 對 GAS 發送設定標記請求
         fetch(`${MARKER_GAS_URL}?action=set_flag`, { method: 'GET', mode: 'cors' })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    msg.className = "status success";
-                    msg.textContent = "✅ 更新リクエストの送信に成功しました。";
+                    checkStatus(); // 立即重新更新 UI 狀態
                 } else {
-                    msg.className = "status error";
-                    msg.textContent = "❌ 送信に失敗しました。時間をおいて再度お試しください。";
+                    alert("送信に失敗しました。");
                     btn.disabled = false;
                 }
             })
             .catch(error => {
-                console.error("Error:", error);
-                msg.className = "status error";
-                msg.textContent = "❌ 接続エラーが発生しました。";
+                console.error("Error setting flag:", error);
+                alert("接続エラーが発生しました。");
                 btn.disabled = false;
             });
     }
+
+    // 啟動與定時檢查
+    checkStatus();
+    setInterval(checkStatus, 8000);
 </script>
 
 </body>
