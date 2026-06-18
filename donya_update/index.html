@@ -80,7 +80,7 @@
     <h1>自社在庫同期ツール</h1>
     <p>自社 Google スプレッドシートの在庫データを、Shopify および RCM 門戶へ自動反映します。</p>
     
-    <button id="updateBtn" class="btn" onclick="requestUpdate()" disabled>🔄 同期確認中...</button>
+    <button id="updateBtn" class="btn" onclick="requestUpdate()" disabled>🔄 在庫確認中...</button>
     <div id="statusMsg" class="status-box state-running">システム状況を読み込み中...</div>
     
     <div class="last-update" id="lastUpdateBox" style="display: none;">
@@ -90,7 +90,7 @@
 </div>
 
 <script>
-    const MARKER_GAS_URL = "https://script.google.com/macros/s/AKfycbxlQ3VpuZFUcHwPc05bNf-ZHZigu4WSvzT2mHVyMr3zVgbVxvpseVNZPqURPCoPT87e/exec";
+    const MARKER_GAS_URL = "https://script.google.com/macros/s/AKfycbyCrHizC_eqyWiAgIf_AVH4Lsfis_kXcJN_mB2pjtRXFMygnVrfwKDBWYBryvWY594_/exec";
     const btn = document.getElementById('updateBtn');
     const msg = document.getElementById('statusMsg');
     const lastBox = document.getElementById('lastUpdateBox');
@@ -103,18 +103,21 @@
             .then(response => response.json())
             .then(data => {
                 if (data.is_running) {
-                    // 伺服器正在執行
+                    // 1. 伺服器正在執行中
                     btn.disabled = true;
+                    btn.textContent = "🔄 同期処理を実行中...";
                     msg.className = "status-box state-running";
                     msg.innerHTML = "🔄 <b>更新処理を実行中...</b><br>現在、サーバーが Shopify 及 RCM を更新しています。ブラウザを閉じてお待ちいただいても問題ありません。";
                 } else if (data.update_requested) {
-                    // 已發送更新要求，等待伺服器下載
+                    // 2. 已送出更新要求，正在排隊等待伺服器輪詢
                     btn.disabled = true;
+                    btn.textContent = "⏱️ 同期リクエスト待機中";
                     msg.className = "status-box state-requested";
                     msg.innerHTML = "⏱️ <b>同期リクエスト送信済み</b><br>同期の待機列に入りました。サーバーの処理開始をお待ちください...";
                 } else {
-                    // 閒置狀態，可點擊
+                    // 3. 待機中，可按下按鈕
                     btn.disabled = false;
+                    btn.textContent = "🔄 在庫情報を更新する";
                     msg.className = "status-box state-idle";
                     msg.innerHTML = "✅ <b>同期準備完了</b><br>ボタンを押すと、即時同期処理を開始できます。";
                 }
@@ -136,6 +139,7 @@
 
     function requestUpdate() {
         btn.disabled = true;
+        btn.textContent = "⏱️ 送信中...";
         msg.className = "status-box state-requested";
         msg.innerHTML = "⏱️ 更新リクエスト送信中...";
 
@@ -143,16 +147,18 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    checkStatus(); // 立即重新更新 UI 狀態
+                    checkStatus(); // 立即更新一次 UI
                 } else {
                     alert("送信に失敗しました。");
                     btn.disabled = false;
+                    btn.textContent = "🔄 在庫情報を更新する";
                 }
             })
             .catch(error => {
                 console.error("Error setting flag:", error);
                 alert("接続エラーが発生しました。");
                 btn.disabled = false;
+                btn.textContent = "🔄 在庫情報を更新する";
             });
     }
 
