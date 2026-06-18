@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在庫データ同期システム</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        p {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+        .btn {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 100%;
+        }
+        .btn:hover {
+            background-color: #1d4ed8;
+        }
+        .btn:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .success { color: #16a34a; }
+        .error { color: #dc2626; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>自社在庫同期ツール</h1>
+    <p>下記のボタンを押すと同期リクエストが送信されます。<br>自動処理が開始されるまで最大30分かかります。</p>
+    
+    <button id="updateBtn" class="btn" onclick="requestUpdate()">🔄 在庫情報を更新する</button>
+    <div id="statusMsg" class="status"></div>
+</div>
+
+<script>
+    // 💡 已自動填入您提供的新 GAS 網址
+    const MARKER_GAS_URL = "https://script.google.com/macros/s/AKfycbyCrHizC_eqyWiAgIf_AVH4Lsfis_kXcJN_mB2pjtRXFMygnVrfwKDBWYBryvWY594_/exec";
+
+    function requestUpdate() {
+        const btn = document.getElementById('updateBtn');
+        const msg = document.getElementById('statusMsg');
+        
+        btn.disabled = true;
+        msg.className = "status";
+        msg.textContent = "リクエスト送信中...";
+
+        // 對 GAS 發送設定標記請求
+        fetch(`${MARKER_GAS_URL}?action=set_flag`, { method: 'GET', mode: 'cors' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    msg.className = "status success";
+                    msg.textContent = "✅ 更新リクエストの送信に成功しました。";
+                } else {
+                    msg.className = "status error";
+                    msg.textContent = "❌ 送信に失敗しました。時間をおいて再度お試しください。";
+                    btn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                msg.className = "status error";
+                msg.textContent = "❌ 接続エラーが発生しました。";
+                btn.disabled = false;
+            });
+    }
+</script>
+
+</body>
+</html>
