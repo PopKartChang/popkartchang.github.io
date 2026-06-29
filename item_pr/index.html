@@ -107,7 +107,7 @@
       flex-wrap: wrap;
     }
     .quick-btn {
-      padding: 5px 12px;
+      padding: 5px 14px;
       border: 1.5px solid #d1d9e6;
       background: #f5f7fb;
       border-radius: 20px;
@@ -267,6 +267,7 @@
       <button class="quick-btn" onclick="setQuick('today')">今日</button>
       <button class="quick-btn" onclick="setQuick('week')">今週</button>
       <button class="quick-btn" onclick="setQuick('month')">今月</button>
+      <button class="quick-btn" onclick="setQuick('last_month')">先月</button>
     </div>
   </div>
 
@@ -280,7 +281,7 @@
     <span class="spinner"></span> システム状態を読み込み中...
   </div>
 
-  <!-- ダウンロードボタン（readyのときのみ表示） -->
+  <!-- ダウンロードボタン -->
   <a id="dlBtn" class="dl-btn" style="display:none;" href="#" target="_blank">
     ⬇️ CSVをダウンロード
   </a>
@@ -315,7 +316,7 @@
 // ============================================================
 //  設定
 // ============================================================
-const GAS_URL = "https://script.google.com/macros/s/AKfycbxJ-HXN7KV68QZORUqOeA_mNU6aYtJvWYMA5QIfwg3idlLkUtw8v9tiMO-WRycS4p0G/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwdjLr9jANXCbXAH3V3m3_f20mPCQpRh18JA-cJvqVsSp43hVK5D8PLwpskROJkccvg/exec";
 const POLL_INTERVAL_MS = 8000;  // 8秒ごとにポーリング
 
 // ============================================================
@@ -325,50 +326,75 @@ let currentStatus  = null;   // "idle" | "generating" | "ready"
 let currentFileUrl = "";
 let currentFileName = "";
 let pollTimer      = null;
-let autoDownloadDone = false; // readyのとき初回自動ダウンロードリンク表示済みか
 
 // ============================================================
-//  日付ユーティリティ（JST）
+//  日付ユーティリティ（JST 準拠・Intl API で安全計算）
 // ============================================================
-function getJSTDate() {
-  // JavaScriptのDateはUTCなので、JSTオフセット（+9時間）を手動計算
+function getJSTDateInfo() {
   const now = new Date();
-  const jstMs = now.getTime() + (9 * 60 * 60 * 1000);
-  return new Date(jstMs);
-}
-
-function toDateStr(d) {
-  // YYYY-MM-DD形式
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(d.getUTCDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  const formatter = new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  });
+  const parts = formatter.formatToParts(now);
+  const y = parseInt(parts.find(p => p.type === 'year').value);
+  const m = parseInt(parts.find(p => p.type === 'month').value);
+  const d = parseInt(parts.find(p => p.type === 'day').value);
+  return { y, m, d, dateStr: `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}` };
 }
 
 function setQuick(type) {
-  // クイックボタンのactive切り替え
+  // 按鈕高亮切換
   document.querySelectorAll(".quick-btn").forEach(b => b.classList.remove("active"));
-  event.target.classList.add("active");
+  
+  if (window.event && window.event.target && window.event.target.classList.contains("quick-btn")) {
+    window.event.target.classList.add("active");
+  } else {
+    // 若為初始化或背景呼叫，自動找到對應按鈕並高亮
+    const btns = document.querySelectorAll(".quick-btn");
+    if (type === 'today' && btns[0]) btns[0].classList.add("active");
+    if (type === 'week' && btns[1]) btns[1].classList.add("active");
+    if (type === 'month' && btns[2]) btns[2].classList.add("active");
+    if (type === 'last_month' && btns[3]) btns[3].classList.add("active");
+  }
 
-  const today = getJSTDate();
+  const jst = getJSTDateInfo();
   let from, to;
 
   if (type === "today") {
-    from = to = toDateStr(today);
+    // 1. 今日：開始和結束都是今天
+    from = to = jst.dateStr;
 
   } else if (type === "week") {
-    // 月曜日起点の今週
-    const dow = today.getUTCDay(); // 0=Sun
-    const diffToMon = (dow === 0) ? -6 : 1 - dow;
-    const mon = new Date(today.getTime() + diffToMon * 86400000);
-    from = toDateStr(mon);
-    to   = toDateStr(today);
+    // 2. 今週：以星期一為起點，到今天為止
+    const now = new Date();
+    const day = now.getDay(); // 0 (Sun) to 6 (Sat)
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(now.setDate(diff));
+    const y = monday.getFullYear();
+    const m = String(monday.getMonth() + 1).padStart(2, "0");
+    const d = String(monday.getDate()).padStart(2, "0");
+    from = `${y}-${m}-${d}`;
+    to = jst.dateStr;
 
   } else if (type === "month") {
-    const y = today.getUTCFullYear();
-    const m = today.getUTCMonth() + 1;
-    from = `${y}-${String(m).padStart(2,"0")}-01`;
-    to   = toDateStr(today);
+    // 3. 今月：本月 1 號到今天
+    from = `${jst.y}-${String(jst.m).padStart(2,"0")}-01`;
+    to   = jst.dateStr;
+
+  } else if (type === "last_month") {
+    // 4. 先月：上個月 1 號到上個月最後一天
+    let lm = jst.m - 1;
+    let ly = jst.y;
+    if (lm === 0) {
+      lm = 12;
+      ly -= 1;
+    }
+    const lastDay = new Date(ly, lm, 0).getDate();
+    from = `${ly}-${String(lm).padStart(2,"0")}-01`;
+    to   = `${ly}-${String(lm).padStart(2,"0")}-${String(lastDay).padStart(2,"0")}`;
   }
 
   document.getElementById("dateFrom").value = from;
@@ -376,18 +402,14 @@ function setQuick(type) {
 }
 
 // ============================================================
-//  デフォルト日付を今月に設定
+//  預設載入「今月」
 // ============================================================
 function initDates() {
-  const today = getJSTDate();
-  const y = today.getUTCFullYear();
-  const m = today.getUTCMonth() + 1;
-  document.getElementById("dateFrom").value = `${y}-${String(m).padStart(2,"0")}-01`;
-  document.getElementById("dateTo").value   = toDateStr(today);
+  setQuick('month');
 }
 
 // ============================================================
-//  GAS APIコール
+//  GAS API
 // ============================================================
 async function gasCall(params) {
   const qs = new URLSearchParams(params).toString();
@@ -397,7 +419,7 @@ async function gasCall(params) {
 }
 
 // ============================================================
-//  UIアップデート
+//  UI更新邏輯
 // ============================================================
 function renderUI(data) {
   const btn      = document.getElementById("mainBtn");
@@ -409,7 +431,7 @@ function renderUI(data) {
   currentStatus  = status;
   currentFileUrl = data.file_url || "";
 
-  // --- ダウンロードボタン ---
+  // --- 下載按鈕連動顯示 ---
   if (status === "ready" && currentFileUrl) {
     dlBtn.href = currentFileUrl;
     dlBtn.style.display = "block";
@@ -419,7 +441,7 @@ function renderUI(data) {
     dlBtn.style.display = "none";
   }
 
-  // --- メインボタン ---
+  // --- 主按鈕狀態與文字連動 ---
   if (status === "generating") {
     btn.disabled    = true;
     btn.textContent = "⏳ 生成中...";
@@ -427,12 +449,11 @@ function renderUI(data) {
     btn.disabled    = false;
     btn.textContent = "🔄 再抽出する";
   } else {
-    // idle
     btn.disabled    = false;
     btn.textContent = "📥 CSVを生成してダウンロード";
   }
 
-  // --- ステータスボックス ---
+  // --- 狀態資訊區顯示優化 ---
   box.className = "status-box";
   if (status === "generating") {
     box.classList.add("status-generating");
@@ -444,26 +465,31 @@ function renderUI(data) {
     const fromStr = data.date_from || "";
     const toStr   = data.date_to   || "";
     box.classList.add("status-ready");
-    box.innerHTML = `✅ <b>ファイル生成完了</b><br>期間: ${fromStr} 〜 ${toStr} / <b>${cnt}件</b>`;
+    
+    // 若無時間區間（例如後台測試手動生成），顯示「手動抽出データ」
+    const periodDisplay = (fromStr && toStr) ? `${fromStr} 〜 ${toStr}` : "手動抽出データ";
+    box.innerHTML = `✅ <b>ファイル生成完了</b><br>期間: ${periodDisplay} / <b>${cnt}件</b>`;
   } else {
     box.classList.add("status-idle");
     box.innerHTML = `🟢 <b>待機中</b><br>期間を選択して「CSV生成」ボタンを押してください。`;
   }
 
-  // --- 履歴 ---
+  // --- 前回歷史記錄顯示優化 ---
   if (data.last_run_time && data.last_run_time !== "N/A") {
     histBox.style.display = "block";
     const jstDate = new Date(data.last_run_time);
     const jstStr  = jstDate.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" }) + " JST";
     document.getElementById("histTime").textContent      = jstStr;
     document.getElementById("histRowCount").textContent  = (data.row_count || "0") + " 件";
+    
     const fromStr = data.date_from || "--";
     const toStr   = data.date_to   || "--";
-    document.getElementById("histDateRange").textContent = `${fromStr} 〜 ${toStr}`;
+    const periodDisplay = (fromStr !== "--" && toStr !== "--") ? `${fromStr} 〜 ${toStr}` : "手動抽出（期間外）";
+    document.getElementById("histDateRange").textContent = periodDisplay;
 
     const resultEl = document.getElementById("histResult");
     const lastRes  = data.last_result || "N/A";
-    if (lastRes === "success") {
+    if (lastRes.startsWith("success")) {
       resultEl.className   = "badge-success";
       resultEl.textContent = "✅ 成功";
     } else if (lastRes.startsWith("error")) {
@@ -485,7 +511,7 @@ function showError(msg) {
 }
 
 // ============================================================
-//  ステータスポーリング
+//  狀態輪詢
 // ============================================================
 async function checkStatus() {
   try {
@@ -502,11 +528,9 @@ async function checkStatus() {
 }
 
 // ============================================================
-//  メインボタン処理
+//  點擊生成按鈕
 // ============================================================
 async function handleMain() {
-  // readyのときは「再抽出」→ idleに戻してすぐ生成リクエスト
-  // idleのときは「生成リクエスト」
   const fromVal = document.getElementById("dateFrom").value;
   const toVal   = document.getElementById("dateTo").value;
 
@@ -530,7 +554,7 @@ async function handleMain() {
       date_to:   toVal
     });
     if (data.success) {
-      await checkStatus();  // UIを即座に更新
+      await checkStatus();
     } else {
       alert("エラー: " + (data.message || "不明なエラー"));
       await checkStatus();
@@ -543,7 +567,7 @@ async function handleMain() {
 }
 
 // ============================================================
-//  管理者強制リセット
+//  管理者強制重設
 // ============================================================
 async function adminReset() {
   if (!confirm("⚠️ 強制リセットを実行しますか？\n処理中の場合もキャンセルされます。")) return;
@@ -561,7 +585,7 @@ async function adminReset() {
 }
 
 // ============================================================
-//  初期化
+//  初始化與輪詢啟動
 // ============================================================
 initDates();
 checkStatus();
