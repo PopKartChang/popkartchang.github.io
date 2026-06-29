@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商品データ抽出ツール | Upside Golf</title>
+  <style>
+    /* ========== ベース ========== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 32px 16px 48px;
+      color: #1a2234;
+    }
+
+    /* ========== カード ========== */
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      width: 100%;
+      max-width: 480px;
+      padding: 36px 32px;
+    }
+
+    /* ========== ヘッダー ========== */
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #1a4fc4, #2563eb);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #1a2234;
+    }
+    .subtitle {
+      font-size: 0.8rem;
+      color: #6b7a99;
+      margin-bottom: 28px;
+      padding-left: 46px;
+      line-height: 1.4;
+    }
+
+    /* ========== 日付フォーム ========== */
+    .date-section {
+      margin-bottom: 20px;
+    }
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #6b7a99;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+    .date-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .date-input {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1.5px solid #d1d9e6;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: #1a2234;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 0;
+    }
+    .date-input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    }
+    .date-sep {
+      color: #9aaccc;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    /* ========== クイックボタン ========== */
+    .quick-btns {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .quick-btn {
+      padding: 5px 12px;
+      border: 1.5px solid #d1d9e6;
+      background: #f5f7fb;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #4a5c7a;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .quick-btn:hover {
+      background: #e8eef8;
+      border-color: #2563eb;
+      color: #2563eb;
+    }
+    .quick-btn.active {
+      background: #2563eb;
+      border-color: #2563eb;
+      color: #fff;
+    }
+
+    /* ========== メインボタン ========== */
+    .main-btn {
+      width: 100%;
+      padding: 14px;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      margin-top: 4px;
+    }
+    .main-btn:hover:not(:disabled) {
+      background: #1d4ed8;
+    }
+    .main-btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    .main-btn:disabled {
+      background: #93acd3;
+      cursor: not-allowed;
+    }
+
+    /* ========== ステータスボックス ========== */
+    .status-box {
+      margin-top: 20px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      font-size: 0.87rem;
+      line-height: 1.5;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+    .status-idle {
+      background: #f0fdf4;
+      border: 1.5px solid #86efac;
+      color: #166534;
+    }
+    .status-generating {
+      background: #eff6ff;
+      border: 1.5px solid #93c5fd;
+      color: #1e40af;
+    }
+    .status-ready {
+      background: #f0fdf4;
+      border: 1.5px solid #34d399;
+      color: #065f46;
+    }
+    .status-error {
+      background: #fff7f7;
+      border: 1.5px solid #fca5a5;
+      color: #991b1b;
+    }
+
+    /* ========== スピナー ========== */
+    .spinner {
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 5px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ========== ダウンロードボタン ========== */
+    .dl-btn {
+      display: block;
+      margin-top: 12px;
+      padding: 11px;
+      background: #059669;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.2s;
+      width: 100%;
+    }
+    .dl-btn:hover { background: #047857; }
+
+    /* ========== 前回の実行履歴 ========== */
+    .history {
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1.5px solid #e8eef8;
+      font-size: 0.77rem;
+      color: #8899bb;
+    }
+    .history strong { color: #4a5c7a; }
+    .history .row { display: flex; justify-content: space-between; margin-top: 4px; }
+    .badge-success { color: #059669; font-weight: 700; }
+    .badge-error   { color: #dc2626; font-weight: 700; }
+
+    /* ========== 管理リセットリンク ========== */
+    .admin-link {
+      margin-top: 16px;
+      text-align: right;
+      font-size: 0.72rem;
+    }
+    .admin-link a {
+      color: #9aaccc;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .admin-link a:hover { color: #dc2626; text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <!-- ヘッダー -->
+  <div class="logo">
+    <div class="logo-icon">📊</div>
+    <h1>商品データ抽出ツール</h1>
+  </div>
+  <p class="subtitle">Upside Golf RCM &mdash; 商品コード・商品名・販売価格を CSV でエクスポート</p>
+
+  <!-- 日付選択 -->
+  <div class="date-section">
+    <div class="section-label">抽出期間</div>
+    <div class="date-row">
+      <input type="date" id="dateFrom" class="date-input">
+      <span class="date-sep">〜</span>
+      <input type="date" id="dateTo" class="date-input">
+    </div>
+    <div class="quick-btns">
+      <button class="quick-btn" onclick="setQuick('today')">今日</button>
+      <button class="quick-btn" onclick="setQuick('week')">今週</button>
+      <button class="quick-btn" onclick="setQuick('month')">今月</button>
+    </div>
+  </div>
+
+  <!-- メインボタン -->
+  <button id="mainBtn" class="main-btn" onclick="handleMain()" disabled>
+    📥 ステータス確認中...
+  </button>
+
+  <!-- ステータス -->
+  <div id="statusBox" class="status-box status-generating">
+    <span class="spinner"></span> システム状態を読み込み中...
+  </div>
+
+  <!-- ダウンロードボタン（readyのときのみ表示） -->
+  <a id="dlBtn" class="dl-btn" style="display:none;" href="#" target="_blank">
+    ⬇️ CSVをダウンロード
+  </a>
+
+  <!-- 履歴 -->
+  <div class="history" id="historyBox" style="display:none;">
+    <div class="row">
+      <span><strong>前回の抽出期間:</strong></span>
+      <span id="histDateRange">--</span>
+    </div>
+    <div class="row">
+      <span><strong>抽出件数:</strong></span>
+      <span id="histRowCount">--</span>
+    </div>
+    <div class="row">
+      <span><strong>完了時刻:</strong></span>
+      <span id="histTime">--</span>
+    </div>
+    <div class="row">
+      <span><strong>結果:</strong></span>
+      <span id="histResult">--</span>
+    </div>
+  </div>
+
+  <!-- 管理者リセット -->
+  <div class="admin-link">
+    <a onclick="adminReset()">⚙ 強制リセット</a>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  設定
+// ============================================================
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwmLHP_GY9J9l8k4PPl1uP3ZltffaODixuqbHPJT-n0hJb1lfCVE7zi6213iJg2WaK3/exec";
+const POLL_INTERVAL_MS = 8000;  // 8秒ごとにポーリング
+
+// ============================================================
+//  状態変数
+// ============================================================
+let currentStatus  = null;   // "idle" | "generating" | "ready"
+let currentFileUrl = "";
+let currentFileName = "";
+let pollTimer      = null;
+let autoDownloadDone = false; // readyのとき初回自動ダウンロードリンク表示済みか
+
+// ============================================================
+//  日付ユーティリティ（JST）
+// ============================================================
+function getJSTDate() {
+  // JavaScriptのDateはUTCなので、JSTオフセット（+9時間）を手動計算
+  const now = new Date();
+  const jstMs = now.getTime() + (9 * 60 * 60 * 1000);
+  return new Date(jstMs);
+}
+
+function toDateStr(d) {
+  // YYYY-MM-DD形式
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function setQuick(type) {
+  // クイックボタンのactive切り替え
+  document.querySelectorAll(".quick-btn").forEach(b => b.classList.remove("active"));
+  event.target.classList.add("active");
+
+  const today = getJSTDate();
+  let from, to;
+
+  if (type === "today") {
+    from = to = toDateStr(today);
+
+  } else if (type === "week") {
+    // 月曜日起点の今週
+    const dow = today.getUTCDay(); // 0=Sun
+    const diffToMon = (dow === 0) ? -6 : 1 - dow;
+    const mon = new Date(today.getTime() + diffToMon * 86400000);
+    from = toDateStr(mon);
+    to   = toDateStr(today);
+
+  } else if (type === "month") {
+    const y = today.getUTCFullYear();
+    const m = today.getUTCMonth() + 1;
+    from = `${y}-${String(m).padStart(2,"0")}-01`;
+    to   = toDateStr(today);
+  }
+
+  document.getElementById("dateFrom").value = from;
+  document.getElementById("dateTo").value   = to;
+}
+
+// ============================================================
+//  デフォルト日付を今月に設定
+// ============================================================
+function initDates() {
+  const today = getJSTDate();
+  const y = today.getUTCFullYear();
+  const m = today.getUTCMonth() + 1;
+  document.getElementById("dateFrom").value = `${y}-${String(m).padStart(2,"0")}-01`;
+  document.getElementById("dateTo").value   = toDateStr(today);
+}
+
+// ============================================================
+//  GAS APIコール
+// ============================================================
+async function gasCall(params) {
+  const qs = new URLSearchParams(params).toString();
+  const res = await fetch(`${GAS_URL}?${qs}`, { method: "GET", mode: "cors" });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+// ============================================================
+//  UIアップデート
+// ============================================================
+function renderUI(data) {
+  const btn      = document.getElementById("mainBtn");
+  const box      = document.getElementById("statusBox");
+  const dlBtn    = document.getElementById("dlBtn");
+  const histBox  = document.getElementById("historyBox");
+
+  const status   = data.status || "idle";
+  currentStatus  = status;
+  currentFileUrl = data.file_url || "";
+
+  // --- ダウンロードボタン ---
+  if (status === "ready" && currentFileUrl) {
+    dlBtn.href = currentFileUrl;
+    dlBtn.style.display = "block";
+    const fname = data.file_name || "export.csv";
+    dlBtn.textContent = `⬇️ ${fname} をダウンロード`;
+  } else {
+    dlBtn.style.display = "none";
+  }
+
+  // --- メインボタン ---
+  if (status === "generating") {
+    btn.disabled    = true;
+    btn.textContent = "⏳ 生成中...";
+  } else if (status === "ready") {
+    btn.disabled    = false;
+    btn.textContent = "🔄 再抽出する";
+  } else {
+    // idle
+    btn.disabled    = false;
+    btn.textContent = "📥 CSVを生成してダウンロード";
+  }
+
+  // --- ステータスボックス ---
+  box.className = "status-box";
+  if (status === "generating") {
+    box.classList.add("status-generating");
+    const fromStr = data.date_from || "?";
+    const toStr   = data.date_to   || "?";
+    box.innerHTML = `<span class="spinner"></span> <b>生成処理中...</b><br>期間: ${fromStr} 〜 ${toStr}<br>サーバーがデータを抽出しています。このページを閉じても自動的に続きます。`;
+  } else if (status === "ready") {
+    const cnt = data.row_count || "0";
+    const fromStr = data.date_from || "";
+    const toStr   = data.date_to   || "";
+    box.classList.add("status-ready");
+    box.innerHTML = `✅ <b>ファイル生成完了</b><br>期間: ${fromStr} 〜 ${toStr} / <b>${cnt}件</b>`;
+  } else {
+    box.classList.add("status-idle");
+    box.innerHTML = `🟢 <b>待機中</b><br>期間を選択して「CSV生成」ボタンを押してください。`;
+  }
+
+  // --- 履歴 ---
+  if (data.last_run_time && data.last_run_time !== "N/A") {
+    histBox.style.display = "block";
+    const jstDate = new Date(data.last_run_time);
+    const jstStr  = jstDate.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" }) + " JST";
+    document.getElementById("histTime").textContent      = jstStr;
+    document.getElementById("histRowCount").textContent  = (data.row_count || "0") + " 件";
+    const fromStr = data.date_from || "--";
+    const toStr   = data.date_to   || "--";
+    document.getElementById("histDateRange").textContent = `${fromStr} 〜 ${toStr}`;
+
+    const resultEl = document.getElementById("histResult");
+    const lastRes  = data.last_result || "N/A";
+    if (lastRes === "success") {
+      resultEl.className   = "badge-success";
+      resultEl.textContent = "✅ 成功";
+    } else if (lastRes.startsWith("error")) {
+      resultEl.className   = "badge-error";
+      resultEl.textContent = "❌ " + lastRes;
+    } else {
+      resultEl.className   = "";
+      resultEl.textContent = lastRes;
+    }
+  } else {
+    histBox.style.display = "none";
+  }
+}
+
+function showError(msg) {
+  const box = document.getElementById("statusBox");
+  box.className = "status-box status-error";
+  box.innerHTML = `❌ <b>エラー</b><br>${msg}`;
+}
+
+// ============================================================
+//  ステータスポーリング
+// ============================================================
+async function checkStatus() {
+  try {
+    const data = await gasCall({ action: "get_status" });
+    if (!data.success) {
+      showError("サーバーからの応答が異常です。");
+      return;
+    }
+    renderUI(data);
+  } catch (e) {
+    console.error("checkStatus error:", e);
+    showError("接続エラー。インターネット接続を確認してください。");
+  }
+}
+
+// ============================================================
+//  メインボタン処理
+// ============================================================
+async function handleMain() {
+  // readyのときは「再抽出」→ idleに戻してすぐ生成リクエスト
+  // idleのときは「生成リクエスト」
+  const fromVal = document.getElementById("dateFrom").value;
+  const toVal   = document.getElementById("dateTo").value;
+
+  if (!fromVal || !toVal) {
+    alert("抽出期間（開始日・終了日）を選択してください。");
+    return;
+  }
+  if (fromVal > toVal) {
+    alert("開始日が終了日より後になっています。正しく設定してください。");
+    return;
+  }
+
+  const btn = document.getElementById("mainBtn");
+  btn.disabled    = true;
+  btn.textContent = "⏳ リクエスト送信中...";
+
+  try {
+    const data = await gasCall({
+      action:    "request_generate",
+      date_from: fromVal,
+      date_to:   toVal
+    });
+    if (data.success) {
+      await checkStatus();  // UIを即座に更新
+    } else {
+      alert("エラー: " + (data.message || "不明なエラー"));
+      await checkStatus();
+    }
+  } catch (e) {
+    alert("通信エラーが発生しました。もう一度お試しください。");
+    console.error(e);
+    await checkStatus();
+  }
+}
+
+// ============================================================
+//  管理者強制リセット
+// ============================================================
+async function adminReset() {
+  if (!confirm("⚠️ 強制リセットを実行しますか？\n処理中の場合もキャンセルされます。")) return;
+  try {
+    const data = await gasCall({ action: "reset" });
+    if (data.success) {
+      alert("リセット完了しました。");
+    } else {
+      alert("リセット失敗: " + data.error);
+    }
+    await checkStatus();
+  } catch (e) {
+    alert("通信エラー: " + e.message);
+  }
+}
+
+// ============================================================
+//  初期化
+// ============================================================
+initDates();
+checkStatus();
+setInterval(checkStatus, POLL_INTERVAL_MS);
+</script>
+
+</body>
+</html>
