@@ -316,8 +316,10 @@
 // ============================================================
 //  設定
 // ============================================================
-const GAS_URL = "https://script.google.com/macros/s/AKfycbwdjLr9jANXCbXAH3V3m3_f20mPCQpRh18JA-cJvqVsSp43hVK5D8PLwpskROJkccvg/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzxbfjUOabtu7zQwgSzxSYjqY7JmCxC1xLwdBqV4JqmJT6CHH5NmifNO5zkL8O6M0eX/exec";
 const POLL_INTERVAL_MS = 8000;  // 8秒ごとにポーリング
+// ⚠️ GASスクリプトプロパティに設定した API_KEY と同じ値をここに入れてください（空欄なら未認証で動作）。
+const API_KEY = "";
 
 // ============================================================
 //  状態変数
@@ -368,11 +370,12 @@ function setQuick(type) {
     from = to = jst.dateStr;
 
   } else if (type === "week") {
-    // 2. 今週：以星期一為起點，到今天為止
-    const now = new Date();
-    const day = now.getDay(); // 0 (Sun) to 6 (Sat)
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(now.setDate(diff));
+    // 2. 今週：以星期一為起點（JST 基準），到今天為止
+    // 用 JST 的年月日建立一個「視為當地時間」的 Date 物件來算星期幾，避免使用者瀏覽器時區造成誤差
+    const refDate = new Date(jst.y, jst.m - 1, jst.d);
+    const day = refDate.getDay(); // 0 (Sun) to 6 (Sat)
+    const diff = refDate.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(jst.y, jst.m - 1, diff);
     const y = monday.getFullYear();
     const m = String(monday.getMonth() + 1).padStart(2, "0");
     const d = String(monday.getDate()).padStart(2, "0");
@@ -412,7 +415,8 @@ function initDates() {
 //  GAS API
 // ============================================================
 async function gasCall(params) {
-  const qs = new URLSearchParams(params).toString();
+  const merged = API_KEY ? { ...params, api_key: API_KEY } : params;
+  const qs = new URLSearchParams(merged).toString();
   const res = await fetch(`${GAS_URL}?${qs}`, { method: "GET", mode: "cors" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
