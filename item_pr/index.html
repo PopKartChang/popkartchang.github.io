@@ -5,340 +5,209 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>商品データ抽出ツール | Upside Golf</title>
   <style>
-    /* ========== ベース ========== */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", sans-serif;
-      background: #f0f4f8;
+      font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", -apple-system, sans-serif;
+      background: #eef2f8;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      padding: 32px 16px 48px;
       color: #1a2234;
+      padding: 36px 24px 60px;
     }
 
-    /* ========== カード ========== */
-    .card {
-      background: #ffffff;
-      border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-      width: 100%;
-      max-width: 480px;
-      padding: 36px 32px;
-    }
+    .page { max-width: 1040px; margin: 0 auto; }
 
-    /* ========== ヘッダー ========== */
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 6px;
-    }
+    .page-header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
     .logo-icon {
-      width: 36px;
-      height: 36px;
+      width: 44px; height: 44px;
       background: linear-gradient(135deg, #1a4fc4, #2563eb);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      flex-shrink: 0;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(37,99,235,0.28);
     }
-    h1 {
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: #1a2234;
-    }
-    .subtitle {
-      font-size: 0.8rem;
-      color: #6b7a99;
-      margin-bottom: 28px;
-      padding-left: 46px;
-      line-height: 1.4;
+    h1 { font-size: 1.35rem; font-weight: 800; color: #101828; }
+    .subtitle { font-size: 0.85rem; color: #6b7a99; margin-top: 2px; }
+
+    .layout { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 20px; align-items: start; }
+    @media (max-width: 880px) { .layout { grid-template-columns: 1fr; } }
+
+    .card {
+      background: #ffffff; border-radius: 14px;
+      box-shadow: 0 2px 14px rgba(16,24,40,0.06);
+      border: 1px solid #e7ecf5; padding: 28px;
     }
 
-    /* ========== 日付フォーム ========== */
-    .date-section {
-      margin-bottom: 20px;
+    .card-title {
+      font-size: 0.78rem; font-weight: 700; color: #6b7a99;
+      text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 16px;
     }
-    .section-label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: #6b7a99;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 8px;
-    }
-    .date-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+
+    .date-row { display: flex; align-items: center; gap: 10px; max-width: 460px; }
     .date-input {
-      flex: 1;
-      padding: 10px 12px;
-      border: 1.5px solid #d1d9e6;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      color: #1a2234;
-      outline: none;
-      transition: border-color 0.2s;
-      width: 0;
+      flex: 1; padding: 11px 13px; border: 1.5px solid #d1d9e6; border-radius: 9px;
+      font-size: 0.95rem; color: #1a2234; outline: none; transition: border-color 0.2s;
+      font-family: inherit;
     }
-    .date-input:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
-    }
-    .date-sep {
-      color: #9aaccc;
-      font-size: 0.85rem;
-      flex-shrink: 0;
-    }
+    .date-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+    .date-sep { color: #9aaccc; font-size: 0.9rem; flex-shrink: 0; }
 
-    /* ========== クイックボタン ========== */
-    .quick-btns {
-      display: flex;
-      gap: 6px;
-      margin-top: 10px;
-      flex-wrap: wrap;
-    }
+    .quick-label { font-size: 0.74rem; font-weight: 700; color: #93a2c0; margin: 20px 0 9px; letter-spacing: 0.04em; }
+    .quick-btns { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 8px; max-width: 620px; }
+    @media (max-width: 560px) { .quick-btns { grid-template-columns: repeat(3, minmax(0,1fr)); } }
     .quick-btn {
-      padding: 5px 14px;
-      border: 1.5px solid #d1d9e6;
-      background: #f5f7fb;
-      border-radius: 20px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: #4a5c7a;
-      cursor: pointer;
-      transition: all 0.15s;
-      white-space: nowrap;
+      padding: 8px 10px; border: 1.5px solid #d1d9e6; background: #f5f7fb; border-radius: 9px;
+      font-size: 0.82rem; font-weight: 600; color: #4a5c7a; cursor: pointer; transition: all 0.15s;
+      white-space: nowrap; text-align: center; font-family: inherit;
     }
-    .quick-btn:hover {
-      background: #e8eef8;
-      border-color: #2563eb;
-      color: #2563eb;
-    }
-    .quick-btn.active {
-      background: #2563eb;
-      border-color: #2563eb;
-      color: #fff;
-    }
+    .quick-btn:hover { background: #e8eef8; border-color: #2563eb; color: #2563eb; }
+    .quick-btn.active { background: #2563eb; border-color: #2563eb; color: #fff; box-shadow: 0 2px 8px rgba(37,99,235,0.3); }
 
-    /* ========== メインボタン ========== */
+    .range-preview {
+      margin-top: 16px; font-size: 0.8rem; color: #6b7a99;
+      background: #f6f8fc; border-radius: 8px; padding: 9px 12px; display: inline-block;
+    }
+    .range-preview b { color: #2563eb; }
+
     .main-btn {
-      width: 100%;
-      padding: 14px;
-      background: #2563eb;
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-      margin-top: 4px;
+      max-width: 460px; width: 100%; padding: 14px; background: #2563eb; color: #fff;
+      border: none; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: background 0.2s, transform 0.1s; margin-top: 24px; font-family: inherit;
     }
-    .main-btn:hover:not(:disabled) {
-      background: #1d4ed8;
-    }
-    .main-btn:active:not(:disabled) {
-      transform: scale(0.98);
-    }
-    .main-btn:disabled {
-      background: #93acd3;
-      cursor: not-allowed;
-    }
+    .main-btn:hover:not(:disabled) { background: #1d4ed8; }
+    .main-btn:active:not(:disabled) { transform: scale(0.985); }
+    .main-btn:disabled { background: #93acd3; cursor: not-allowed; }
 
-    /* ========== ステータスボックス ========== */
     .status-box {
-      margin-top: 20px;
-      padding: 14px 16px;
-      border-radius: 10px;
-      font-size: 0.87rem;
-      line-height: 1.5;
-      font-weight: 500;
-      transition: all 0.3s;
+      padding: 16px 18px; border-radius: 10px; font-size: 0.88rem; line-height: 1.6;
+      font-weight: 500; transition: all 0.3s;
     }
-    .status-idle {
-      background: #f0fdf4;
-      border: 1.5px solid #86efac;
-      color: #166534;
-    }
-    .status-generating {
-      background: #eff6ff;
-      border: 1.5px solid #93c5fd;
-      color: #1e40af;
-    }
-    .status-ready {
-      background: #f0fdf4;
-      border: 1.5px solid #34d399;
-      color: #065f46;
-    }
-    .status-error {
-      background: #fff7f7;
-      border: 1.5px solid #fca5a5;
-      color: #991b1b;
-    }
+    .status-idle       { background: #f0fdf4; border: 1.5px solid #86efac; color: #166534; }
+    .status-generating { background: #eff6ff; border: 1.5px solid #93c5fd; color: #1e40af; }
+    .status-ready       { background: #f0fdf4; border: 1.5px solid #34d399; color: #065f46; }
+    .status-error        { background: #fff7f7; border: 1.5px solid #fca5a5; color: #991b1b; }
 
-    /* ========== スピナー ========== */
     .spinner {
-      display: inline-block;
-      width: 13px;
-      height: 13px;
-      border: 2px solid currentColor;
-      border-top-color: transparent;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      vertical-align: middle;
-      margin-right: 5px;
+      display: inline-block; width: 13px; height: 13px; border: 2px solid currentColor;
+      border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite;
+      vertical-align: middle; margin-right: 6px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ========== ダウンロードボタン ========== */
     .dl-btn {
-      display: block;
-      margin-top: 12px;
-      padding: 11px;
-      background: #059669;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      font-weight: 700;
-      text-align: center;
-      text-decoration: none;
-      cursor: pointer;
-      transition: background 0.2s;
-      width: 100%;
+      display: block; margin-top: 14px; padding: 12px; background: #059669; color: #fff;
+      border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 700; text-align: center;
+      text-decoration: none; cursor: pointer; transition: background 0.2s; max-width: 460px;
     }
     .dl-btn:hover { background: #047857; }
 
-    /* ========== 前回の実行履歴 ========== */
-    .history {
-      margin-top: 20px;
-      padding-top: 18px;
-      border-top: 1.5px solid #e8eef8;
-      font-size: 0.77rem;
-      color: #8899bb;
+    .history .row {
+      display: flex; justify-content: space-between; padding: 9px 0;
+      border-bottom: 1px solid #f0f3f9; font-size: 0.85rem;
     }
-    .history strong { color: #4a5c7a; }
-    .history .row { display: flex; justify-content: space-between; margin-top: 4px; }
-    .badge-success { color: #059669; font-weight: 700; }
-    .badge-error   { color: #dc2626; font-weight: 700; }
+    .history .row:last-child { border-bottom: none; }
+    .history .row span:first-child { color: #6b7a99; }
+    .history .row span:last-child { color: #1a2234; font-weight: 600; text-align: right; }
+    .badge-success { color: #059669 !important; font-weight: 700 !important; }
+    .badge-error   { color: #dc2626 !important; font-weight: 700 !important; }
 
-    /* ========== 管理リセットリンク ========== */
-    .admin-link {
-      margin-top: 16px;
-      text-align: right;
-      font-size: 0.72rem;
-    }
-    .admin-link a {
-      color: #9aaccc;
-      cursor: pointer;
-      text-decoration: none;
-    }
+    .admin-link { margin-top: 18px; text-align: right; font-size: 0.74rem; }
+    .admin-link a { color: #9aaccc; cursor: pointer; text-decoration: none; }
     .admin-link a:hover { color: #dc2626; text-decoration: underline; }
+
+    .hint-box {
+      margin-top: 18px; font-size: 0.78rem; color: #8899bb; line-height: 1.6;
+      background: #f8fafd; border-radius: 8px; padding: 12px 14px;
+    }
   </style>
 </head>
 <body>
 
-<div class="card">
-  <!-- ヘッダー -->
-  <div class="logo">
+<div class="page">
+
+  <div class="page-header">
     <div class="logo-icon">📊</div>
-    <h1>商品データ抽出ツール</h1>
-  </div>
-  <p class="subtitle">Upside Golf RCM &mdash; 商品コード・商品名・販売価格を CSV でエクスポート</p>
-
-  <!-- 日付選択 -->
-  <div class="date-section">
-    <div class="section-label">抽出期間</div>
-    <div class="date-row">
-      <input type="date" id="dateFrom" class="date-input">
-      <span class="date-sep">〜</span>
-      <input type="date" id="dateTo" class="date-input">
-    </div>
-    <div class="quick-btns">
-      <button class="quick-btn" onclick="setQuick('today')">今日</button>
-      <button class="quick-btn" onclick="setQuick('week')">今週</button>
-      <button class="quick-btn" onclick="setQuick('month')">今月</button>
-      <button class="quick-btn" onclick="setQuick('last_month')">先月</button>
+    <div>
+      <h1>商品データ抽出ツール</h1>
+      <p class="subtitle">Upside Golf RCM &mdash; 商品コード・商品名・販売価格を CSV でエクスポート</p>
     </div>
   </div>
 
-  <!-- メインボタン -->
-  <button id="mainBtn" class="main-btn" onclick="handleMain()" disabled>
-    📥 ステータス確認中...
-  </button>
+  <div class="layout">
 
-  <!-- ステータス -->
-  <div id="statusBox" class="status-box status-generating">
-    <span class="spinner"></span> システム状態を読み込み中...
-  </div>
+    <div class="left-col">
+      <div class="card">
+        <div class="card-title">抽出期間を選択</div>
 
-  <!-- ダウンロードボタン -->
-  <a id="dlBtn" class="dl-btn" style="display:none;" href="#" target="_blank">
-    ⬇️ CSVをダウンロード
-  </a>
+        <div class="date-row">
+          <input type="date" id="dateFrom" class="date-input">
+          <span class="date-sep">〜</span>
+          <input type="date" id="dateTo" class="date-input">
+        </div>
 
-  <!-- 履歴 -->
-  <div class="history" id="historyBox" style="display:none;">
-    <div class="row">
-      <span><strong>前回の抽出期間:</strong></span>
-      <span id="histDateRange">--</span>
-    </div>
-    <div class="row">
-      <span><strong>抽出件数:</strong></span>
-      <span id="histRowCount">--</span>
-    </div>
-    <div class="row">
-      <span><strong>完了時刻:</strong></span>
-      <span id="histTime">--</span>
-    </div>
-    <div class="row">
-      <span><strong>結果:</strong></span>
-      <span id="histResult">--</span>
-    </div>
-  </div>
+        <div class="quick-label">クイック選択</div>
+        <div class="quick-btns">
+          <button class="quick-btn" data-type="today"      onclick="setQuick('today')">今日</button>
+          <button class="quick-btn" data-type="yesterday"  onclick="setQuick('yesterday')">昨日</button>
+          <button class="quick-btn" data-type="week"       onclick="setQuick('week')">今週</button>
+          <button class="quick-btn" data-type="last_week"  onclick="setQuick('last_week')">先週</button>
+          <button class="quick-btn" data-type="last7"      onclick="setQuick('last7')">過去7日間</button>
+          <button class="quick-btn" data-type="month"      onclick="setQuick('month')">今月</button>
+          <button class="quick-btn" data-type="last_month" onclick="setQuick('last_month')">先月</button>
+          <button class="quick-btn" data-type="last30"     onclick="setQuick('last30')">過去30日間</button>
+          <button class="quick-btn" data-type="year"       onclick="setQuick('year')">今年</button>
+          <button class="quick-btn" data-type="last_year"  onclick="setQuick('last_year')">昨年</button>
+        </div>
 
-  <!-- 管理者リセット -->
-  <div class="admin-link">
-    <a onclick="adminReset()">⚙ 強制リセット</a>
+        <div class="range-preview" id="rangePreview">期間: --</div>
+
+        <button id="mainBtn" class="main-btn" onclick="handleMain()" disabled>
+          📥 ステータス確認中...
+        </button>
+
+        <div id="statusBox" class="status-box status-generating" style="margin-top:20px;">
+          <span class="spinner"></span> システム状態を読み込み中...
+        </div>
+
+        <a id="dlBtn" class="dl-btn" style="display:none;" href="#" target="_blank">
+          ⬇️ CSVをダウンロード
+        </a>
+
+        <div class="hint-box">
+          💡 生成には時間がかかる場合があります。このページを閉じても処理はバックグラウンドで継続され、再度開くと自動的に進捗が反映されます（8秒ごとに自動更新）。
+        </div>
+      </div>
+    </div>
+
+    <div class="right-col">
+      <div class="card history" id="historyBox" style="display:none;">
+        <div class="card-title">前回の抽出履歴</div>
+        <div class="row"><span>抽出期間</span><span id="histDateRange">--</span></div>
+        <div class="row"><span>抽出件数</span><span id="histRowCount">--</span></div>
+        <div class="row"><span>完了時刻</span><span id="histTime">--</span></div>
+        <div class="row"><span>結果</span><span id="histResult">--</span></div>
+
+        <div class="admin-link">
+          <a onclick="adminReset()">⚙ 強制リセット</a>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <script>
-// ============================================================
-//  設定
-// ============================================================
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzxbfjUOabtu7zQwgSzxSYjqY7JmCxC1xLwdBqV4JqmJT6CHH5NmifNO5zkL8O6M0eX/exec";
-const POLL_INTERVAL_MS = 8000;  // 8秒ごとにポーリング
-// ⚠️ GASスクリプトプロパティに設定した API_KEY と同じ値をここに入れてください（空欄なら未認証で動作）。
+const POLL_INTERVAL_MS = 8000;
 const API_KEY = "";
 
-// ============================================================
-//  状態変数
-// ============================================================
-let currentStatus  = null;   // "idle" | "generating" | "ready"
+let currentStatus  = null;
 let currentFileUrl = "";
-let currentFileName = "";
-let pollTimer      = null;
 
-// ============================================================
-//  日付ユーティリティ（JST 準拠・Intl API で安全計算）
-// ============================================================
 function getJSTDateInfo() {
   const now = new Date();
   const formatter = new Intl.DateTimeFormat("ja-JP", {
-    timeZone: "Asia/Tokyo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
+    timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit"
   });
   const parts = formatter.formatToParts(now);
   const y = parseInt(parts.find(p => p.type === 'year').value);
@@ -347,73 +216,107 @@ function getJSTDateInfo() {
   return { y, m, d, dateStr: `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}` };
 }
 
-function setQuick(type) {
-  // 按鈕高亮切換
-  document.querySelectorAll(".quick-btn").forEach(b => b.classList.remove("active"));
-  
-  if (window.event && window.event.target && window.event.target.classList.contains("quick-btn")) {
-    window.event.target.classList.add("active");
-  } else {
-    // 若為初始化或背景呼叫，自動找到對應按鈕並高亮
-    const btns = document.querySelectorAll(".quick-btn");
-    if (type === 'today' && btns[0]) btns[0].classList.add("active");
-    if (type === 'week' && btns[1]) btns[1].classList.add("active");
-    if (type === 'month' && btns[2]) btns[2].classList.add("active");
-    if (type === 'last_month' && btns[3]) btns[3].classList.add("active");
-  }
+function jstAsLocalDate(y, m, d) { return new Date(y, m - 1, d); }
+function fmtDate(dateObj) {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const d = String(dateObj.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+function addDays(dateObj, days) {
+  const r = new Date(dateObj);
+  r.setDate(r.getDate() + days);
+  return r;
+}
 
-  const jst = getJSTDateInfo();
+function setQuick(type) {
+  document.querySelectorAll(".quick-btn").forEach(b => b.classList.remove("active"));
+  const targetBtn = document.querySelector(`.quick-btn[data-type="${type}"]`);
+  if (targetBtn) targetBtn.classList.add("active");
+
+  const jst   = getJSTDateInfo();
+  const today = jstAsLocalDate(jst.y, jst.m, jst.d);
   let from, to;
 
   if (type === "today") {
-    // 1. 今日：開始和結束都是今天
     from = to = jst.dateStr;
 
+  } else if (type === "yesterday") {
+    from = to = fmtDate(addDays(today, -1));
+
   } else if (type === "week") {
-    // 2. 今週：以星期一為起點（JST 基準），到今天為止
-    // 用 JST 的年月日建立一個「視為當地時間」的 Date 物件來算星期幾，避免使用者瀏覽器時區造成誤差
-    const refDate = new Date(jst.y, jst.m - 1, jst.d);
-    const day = refDate.getDay(); // 0 (Sun) to 6 (Sat)
-    const diff = refDate.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(jst.y, jst.m - 1, diff);
-    const y = monday.getFullYear();
-    const m = String(monday.getMonth() + 1).padStart(2, "0");
-    const d = String(monday.getDate()).padStart(2, "0");
-    from = `${y}-${m}-${d}`;
-    to = jst.dateStr;
+    const day = today.getDay();
+    const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(today.getFullYear(), today.getMonth(), diff);
+    from = fmtDate(monday);
+    to   = jst.dateStr;
+
+  } else if (type === "last_week") {
+    const day = today.getDay();
+    const diffThisMon = today.getDate() - day + (day === 0 ? -6 : 1);
+    const thisMonday = new Date(today.getFullYear(), today.getMonth(), diffThisMon);
+    const lastMonday = addDays(thisMonday, -7);
+    const lastSunday = addDays(thisMonday, -1);
+    from = fmtDate(lastMonday);
+    to   = fmtDate(lastSunday);
+
+  } else if (type === "last7") {
+    from = fmtDate(addDays(today, -6));
+    to   = jst.dateStr;
 
   } else if (type === "month") {
-    // 3. 今月：本月 1 號到今天
     from = `${jst.y}-${String(jst.m).padStart(2,"0")}-01`;
     to   = jst.dateStr;
 
   } else if (type === "last_month") {
-    // 4. 先月：上個月 1 號到上個月最後一天
-    let lm = jst.m - 1;
-    let ly = jst.y;
-    if (lm === 0) {
-      lm = 12;
-      ly -= 1;
-    }
+    let lm = jst.m - 1, ly = jst.y;
+    if (lm === 0) { lm = 12; ly -= 1; }
     const lastDay = new Date(ly, lm, 0).getDate();
     from = `${ly}-${String(lm).padStart(2,"0")}-01`;
     to   = `${ly}-${String(lm).padStart(2,"0")}-${String(lastDay).padStart(2,"0")}`;
+
+  } else if (type === "last30") {
+    from = fmtDate(addDays(today, -29));
+    to   = jst.dateStr;
+
+  } else if (type === "year") {
+    from = `${jst.y}-01-01`;
+    to   = jst.dateStr;
+
+  } else if (type === "last_year") {
+    const ly = jst.y - 1;
+    from = `${ly}-01-01`;
+    to   = `${ly}-12-31`;
   }
 
   document.getElementById("dateFrom").value = from;
   document.getElementById("dateTo").value   = to;
+  updateRangePreview();
 }
 
-// ============================================================
-//  預設載入「今月」
-// ============================================================
+function updateRangePreview() {
+  const from = document.getElementById("dateFrom").value;
+  const to   = document.getElementById("dateTo").value;
+  const el   = document.getElementById("rangePreview");
+  if (from && to) {
+    el.innerHTML = `期間: <b>${from}</b> 〜 <b>${to}</b>`;
+  } else {
+    el.textContent = "期間: --";
+  }
+}
+
 function initDates() {
   setQuick('month');
+  document.getElementById("dateFrom").addEventListener("change", () => {
+    document.querySelectorAll(".quick-btn").forEach(b => b.classList.remove("active"));
+    updateRangePreview();
+  });
+  document.getElementById("dateTo").addEventListener("change", () => {
+    document.querySelectorAll(".quick-btn").forEach(b => b.classList.remove("active"));
+    updateRangePreview();
+  });
 }
 
-// ============================================================
-//  GAS API
-// ============================================================
 async function gasCall(params) {
   const merged = API_KEY ? { ...params, api_key: API_KEY } : params;
   const qs = new URLSearchParams(merged).toString();
@@ -422,9 +325,6 @@ async function gasCall(params) {
   return res.json();
 }
 
-// ============================================================
-//  UI更新邏輯
-// ============================================================
 function renderUI(data) {
   const btn      = document.getElementById("mainBtn");
   const box      = document.getElementById("statusBox");
@@ -435,7 +335,6 @@ function renderUI(data) {
   currentStatus  = status;
   currentFileUrl = data.file_url || "";
 
-  // --- 下載按鈕連動顯示 ---
   if (status === "ready" && currentFileUrl) {
     dlBtn.href = currentFileUrl;
     dlBtn.style.display = "block";
@@ -445,7 +344,6 @@ function renderUI(data) {
     dlBtn.style.display = "none";
   }
 
-  // --- 主按鈕狀態與文字連動 ---
   if (status === "generating") {
     btn.disabled    = true;
     btn.textContent = "⏳ 生成中...";
@@ -457,7 +355,6 @@ function renderUI(data) {
     btn.textContent = "📥 CSVを生成してダウンロード";
   }
 
-  // --- 狀態資訊區顯示優化 ---
   box.className = "status-box";
   if (status === "generating") {
     box.classList.add("status-generating");
@@ -469,8 +366,6 @@ function renderUI(data) {
     const fromStr = data.date_from || "";
     const toStr   = data.date_to   || "";
     box.classList.add("status-ready");
-    
-    // 若無時間區間（例如後台測試手動生成），顯示「手動抽出データ」
     const periodDisplay = (fromStr && toStr) ? `${fromStr} 〜 ${toStr}` : "手動抽出データ";
     box.innerHTML = `✅ <b>ファイル生成完了</b><br>期間: ${periodDisplay} / <b>${cnt}件</b>`;
   } else {
@@ -478,14 +373,13 @@ function renderUI(data) {
     box.innerHTML = `🟢 <b>待機中</b><br>期間を選択して「CSV生成」ボタンを押してください。`;
   }
 
-  // --- 前回歷史記錄顯示優化 ---
   if (data.last_run_time && data.last_run_time !== "N/A") {
     histBox.style.display = "block";
     const jstDate = new Date(data.last_run_time);
     const jstStr  = jstDate.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" }) + " JST";
     document.getElementById("histTime").textContent      = jstStr;
     document.getElementById("histRowCount").textContent  = (data.row_count || "0") + " 件";
-    
+
     const fromStr = data.date_from || "--";
     const toStr   = data.date_to   || "--";
     const periodDisplay = (fromStr !== "--" && toStr !== "--") ? `${fromStr} 〜 ${toStr}` : "手動抽出（期間外）";
@@ -514,9 +408,6 @@ function showError(msg) {
   box.innerHTML = `❌ <b>エラー</b><br>${msg}`;
 }
 
-// ============================================================
-//  狀態輪詢
-// ============================================================
 async function checkStatus() {
   try {
     const data = await gasCall({ action: "get_status" });
@@ -531,9 +422,6 @@ async function checkStatus() {
   }
 }
 
-// ============================================================
-//  點擊生成按鈕
-// ============================================================
 async function handleMain() {
   const fromVal = document.getElementById("dateFrom").value;
   const toVal   = document.getElementById("dateTo").value;
@@ -552,11 +440,7 @@ async function handleMain() {
   btn.textContent = "⏳ リクエスト送信中...";
 
   try {
-    const data = await gasCall({
-      action:    "request_generate",
-      date_from: fromVal,
-      date_to:   toVal
-    });
+    const data = await gasCall({ action: "request_generate", date_from: fromVal, date_to: toVal });
     if (data.success) {
       await checkStatus();
     } else {
@@ -570,9 +454,6 @@ async function handleMain() {
   }
 }
 
-// ============================================================
-//  管理者強制重設
-// ============================================================
 async function adminReset() {
   if (!confirm("⚠️ 強制リセットを実行しますか？\n処理中の場合もキャンセルされます。")) return;
   try {
@@ -588,9 +469,6 @@ async function adminReset() {
   }
 }
 
-// ============================================================
-//  初始化與輪詢啟動
-// ============================================================
 initDates();
 checkStatus();
 setInterval(checkStatus, POLL_INTERVAL_MS);
