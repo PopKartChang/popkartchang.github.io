@@ -933,6 +933,9 @@
     // =============================================
     // アップロード
     // =============================================
+    // =============================================
+    // 替換原本的 handleUpload 和檔案讀取功能
+    // =============================================
     async function handleUpload() {
         if (!selectedFile) return showToast('CSVファイルを選択してください', 'error');
 
@@ -944,41 +947,86 @@
         );
         if (!confirmed) return;
 
-        toggleOverlay(true, "サーバーへ送信中...", `ファイル: ${selectedFile.name}`);
+        toggleOverlay(true, "CSVデータを解析中...", "ブラウザで処理しています");
 
         try {
-            const b64 = await readFileAsBase64(selectedFile);
-            const res = await fetchWithTimeout(GAS_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'upload', data: b64 }),
-            }, 60000);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const resJson = await res.json();
+            // 1. 讀取並在前端解析 CSV (取代原本的 Base64)
+            const text = await readFileAsText(selectedFile);
+            const csvData = parseCSV(text);
+            
+            if (csvData.length === 0) throw new Error("CSVにデータがありません");
 
-            if (resJson.status === 'success') {
-                // キャッシュをクリアして強制再取得
-                try { await IDB.del('masterData'); } catch (_) {}
-                try { localStorage.removeItem(LS.LAST_SYNC); } catch (_) {}
-                showToast('✅ アップロード完了。最新データを取得します。', 'success');
-                resetFileUI();
-                await syncData();
-            } else {
-                throw new Error(resJson.message ?? "サーバーエラー");
+            // 2. 設定分批大小 (每次傳送 3000 行)
+            const CHUNK_SIZE = 3000;
+            const totalChunks = Math.ceil(csvData.length / CHUNK_SIZE);
+
+            // 3. 分批發送給伺服器
+            for (let i = 0; i < totalChunks; i++) {
+                const chunk = csvData.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+                const action = (i === 0) ? 'upload_start' : 'upload_chunk';
+
+                toggleOverlay(true, `サーバーへ送信中... (${i + 1}/${totalChunks})`, `少し時間がかかります。画面を閉じないでください。`);
+
+                const res = await fetchWithTimeout(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: action, data: chunk }),
+                }, 45000); // 設定 45 秒超時
+
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const resJson = await res.json();
+                if (resJson.status !== 'success') throw new Error(resJson.message ?? "サーバーエラー");
             }
+
+            // 4. 通知伺服器上傳結束，更新時間戳記
+            toggleOverlay(true, "更新を完了しています...", "最終処理中...");
+            const resEnd = await fetchWithTimeout(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'upload_end' })
+            }, 15000);
+            const endJson = await resEnd.json();
+            if (endJson.status !== 'success') throw new Error(endJson.message);
+
+            // 5. 成功後清除本地快取並重新同步
+            try { await IDB.del('masterData'); } catch (_) {}
+            try { localStorage.removeItem(LS.LAST_SYNC); } catch (_) {}
+            showToast('✅ アップロード完了。最新データを取得します。', 'success');
+            resetFileUI();
+            await syncData();
+
         } catch (e) {
             console.error("アップロードエラー:", e);
-            showToast(`❌ アップロード失敗: ${e.message}`, 'error');
+            showToast(`❌ アップロード失敗: ${e.message}`, 'error', 6000);
             toggleOverlay(false);
         }
     }
 
-    function readFileAsBase64(file) {
+    // 以文字格式讀取檔案
+    function readFileAsText(file) {
         return new Promise((resolve, reject) => {
             const r = new FileReader();
-            r.onload  = e => resolve(e.target.result.split(',')[1]);
-            r.onerror = () => reject(new Error("ファイル読み込み失敗"));
-            r.readAsDataURL(file);
+            r.onload  = e => resolve(e.target.result);
+            r.onerror = () => reject(new Error("ファイルの読み込みに失敗しました"));
+            // 日本客戶常使用 Excel 存 CSV，如果遇到亂碼問題，可將 'UTF-8' 改為 'Shift_JIS'
+            r.readAsText(file, 'UTF-8'); 
         });
+    }
+
+    // 嚴謹的 CSV 解析器 (能正確處理欄位內含逗號或換行的情況)
+    function parseCSV(text) {
+        let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
+        for (l of text) {
+            if ('"' === l) {
+                if (s && l === p) row[i] += l;
+                s = !s;
+            } else if (',' === l && s) l = row[++i] = '';
+            else if ('\n' === l && s) {
+                if ('\r' === p) row[i] = row[i].slice(0, -1);
+                row = ret[++r] = [l = '']; i = 0;
+            } else row[i] += l;
+            p = l;
+        }
+        // 過濾掉最後可能出現的完全空行
+        return ret.filter(row => row.join('').trim() !== '');
     }
 
     function handleFileSelect(file) {
