@@ -3,6 +3,9 @@
 const legacy=root.LegacyPricing || (typeof require==='function'?require('./legacy-engine.js'):null);
 const common={model:'detail',plan:'starter',fvf:13.6,threshold:7500,upper:2.35,intl:1.35,vat:10,tax:0,ad:null,fxFee:null,buffer:null,duty:null,processing:null,processingBase:'duty',importFixed:null,customsMode:'price',orderLow:.30,orderHigh:.40,orderThreshold:10,returnRate:null,returnLoss:null,pack:null,handling:null,overhead:null,billing:'year',monthlyOrders:null,starterYear:4.95,basicYear:21.95,starterMonth:7.95,basicMonth:27.95};
 const product={name:'',sku:'',category:'',origin:'',hts:'',quantity:null,cost:null,yahoo:null,price:null,buyerShipping:null,fx:null,box:'custom',boxId:'',length:null,width:null,height:null,weight:null,divisor:null,freight:null,fuel:null,surcharge:null,customsValue:null,target:null,targetMode:'amount',pricingSource:'wholesale',marketUsage:'reference',referencePrice:null,referenceTaxMode:'gross',referenceTax:10,referenceUplift:null,referenceExtras:'include',referenceURL:'',fxSource:'',fxDate:'',shippingSource:'',shippingDate:''};
+// Reusable pricing conditions belong to saved settings; only item identity and prices reset.
+for(const k of ['quantity','buyerShipping','fx','box','boxId','length','width','height','weight','divisor','freight','fuel','surcharge','customsValue','target','targetMode','marketUsage','referenceTaxMode','referenceTax','referenceUplift','referenceExtras','fxSource','fxDate','shippingSource','shippingDate']){common[k]=product[k];delete product[k]}
+common.quantity=1;common.buyerShipping=0;
 const defaults={...common,...product};
 const numericKeys=Object.keys(defaults).filter(k=>typeof defaults[k]==='number'||defaults[k]===null);
 const round=legacy.round,n=v=>v==null?0:v;

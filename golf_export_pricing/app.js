@@ -6,14 +6,16 @@ let settings={...P.common},state=P.blank(),boxes=[],history=[],updates={...R.def
 const storageKey='golf-export-lab:v3:'+new URL('.',location.href).pathname,legacyKey='golf-export-lab:v2:'+new URL('.',location.href).pathname;
 // [key, Japanese label, unit, select options or text type]. All numbers allow a blank draft.
 const groups={
- sourceFields:[['pricingSource','基準にする価格','',[['wholesale','問屋の仕入価格'],['rakuten','楽天市場の商品価格'],['yahoo','Yahoo!ショッピングの商品価格']]],['quantity','販売する数量','本 / 点']],
- marketInputs:[['marketUsage','価格の使い方','',[['reference','日本の販売価格を保つ'],['purchase','購入する金額として使う']]],['referencePrice','日本の商品価格（1 本・1 点）','JPY'],['referenceTaxMode','表示価格の税金','',[['gross','税込価格'],['net','税抜価格']]],['referenceTax','日本の消費税率','%']],
+ identityFields:[['name','商品名','','text'],['category','商品種類','',[['','選択してください'],['shaft','シャフト'],['grip','グリップ'],['sleeve','スリーブ'],['head','ヘッド'],['club','完成クラブ']]]],
+ sourceFields:[['pricingSource','基準にする価格','',[['wholesale','問屋の仕入価格'],['rakuten','楽天市場の商品価格'],['yahoo','Yahoo!ショッピングの商品価格']]]],
+ marketInputs:[['referencePrice','日本の商品価格（1 本・1 点）','JPY']],
+ pricingDefaults:[['quantity','通常の販売数量','本 / 点'],['marketUsage','楽天・Yahoo! 価格の使い方','',[['reference','日本の販売価格を保つ'],['purchase','購入する金額として使う']]],['referenceTaxMode','日本価格の税金','',[['gross','税込価格'],['net','税抜価格']]],['referenceTax','日本の消費税率','%'],['referenceUplift','日本価格に追加する余裕（任意）','%'],['referenceExtras','日本価格に梱包・作業・想定損失を加算','',[['include','加算して回収する'],['ignore','日本価格だけを回収する']]]],
  costFields:[['cost','仕入原価（1 本・1 点）','JPY']],
  targetFields:[['targetMode','目標の指定方法','',[['amount','1 注文の利益額'],['margin','売上に対する利益率']]],['target','目標利益','JPY / %']],
  deliveryFields:[['freight','配送会社に払う基本送料','JPY'],['buyerShipping','購入者に請求する送料','USD'],['fx','1 USD は何円か','JPY'],['weight','梱包後の重さ（任意）','kg']],
  shippingFields:[['fuel','燃油サーチャージ','%'],['surcharge','遠隔地・長尺などの追加送料','JPY'],['pack','梱包資材費','JPY'],['length','箱の長さ','cm'],['width','箱の幅','cm'],['height','箱の高さ','cm'],['divisor','容積重量の除数','']],
  priceFields:[['price','eBay の商品価格（セット全体）','USD']],
- extraFields:[['name','商品名','','text'],['sku','管理番号 / SKU','','text'],['category','商品区分','',[['','選択しない'],['shaft','シャフト'],['grip','グリップ'],['sleeve','スリーブ'],['head','ヘッド'],['club','完成クラブ']]],['origin','製造された国','','text'],['hts','HTS コード（品目分類）','','text'],['customsValue','手入力の申告価格','USD'],['referenceURL','参考にした商品 URL','','text'],['referenceUplift','日本価格に追加する余裕（任意）','%'],['referenceExtras','日本価格に梱包・作業・想定損失を加算','',[['include','加算して回収する'],['ignore','日本価格だけを回収する']]]],
+ extraFields:[['sku','管理番号 / SKU','','text'],['origin','製造された国','','text'],['hts','HTS コード（品目分類）','','text'],['customsValue','手入力の申告価格','USD'],['referenceURL','参考にした商品 URL','','text']],
  modelFields:[['plan','eBay ストアプラン','',[['starter','Starter / ストアなし'],['basic','Basic 以上']]],['model','費用の計算方法','',[['detail','内訳から計算（通常はこちら）'],['consultant','まとめて概算（比較用）']]]],
  feeFields:[['fvf','落札手数料（FVF）','%'],['intl','海外決済手数料','%'],['ad','広告経由の注文の広告料率','%'],['vat','手数料にかかる日本の消費税','%'],['fxFee','為替・出金手数料','%'],['buffer','まとめて概算する料率','%']],
  advancedFeeFields:[['threshold','FVF 第 1 区分の上限','USD'],['upper','上限を超えた分の FVF','%'],['orderThreshold','注文固定費が変わる金額','USD'],['orderLow','小額注文の固定費','USD'],['orderHigh','通常注文の固定費','USD'],['billing','ストアの契約期間','',[['year','年間契約'],['month','月間契約']]],['monthlyOrders','比較に使う月間注文数','件'],['starterYear','Starter 年間契約の月額','USD'],['basicYear','Basic 年間契約の月額','USD'],['starterMonth','Starter 月間契約の月額','USD'],['basicMonth','Basic 月間契約の月額','USD']],
@@ -39,18 +41,21 @@ function row(label,value,cls=''){return `<div class="row ${cls}"><span>${esc(lab
 function resultCSVLabels(){return {revenue:'税抜売上 USD',salesTax:'Sales Tax USD',base:'購入者支払 USD',fvf:'FVF USD',order:'注文固定費 USD',intl:'海外決済手数料 USD',ad:'広告費 USD',vat:'手数料消費税 USD',fees:'プラットフォーム手数料合計 USD',payout:'プラットフォーム手数料控除後 USD',fxCost:'為替・出金費 USD',duty:'関税 USD',processing:'通関処理費 USD',imports:'輸入費用合計 USD',shipping:'配送コスト JPY',net:'物流・輸入費控除後 JPY',cost:'仕入・作業等 JPY',risk:'想定損失 JPY',profit:'利益 JPY',margin:'利益率 %',perUnit:'1 本あたり利益 JPY',dimWeight:'容積重量 kg',chargeWeight:'課金参考重量 kg'}}
 function render(){
  const market=state.pricingSource!=='wholesale',reference=market&&state.marketUsage==='reference',purchase=market&&state.marketUsage==='purchase';
- $('marketFields').hidden=!market;$('costFields').hidden=purchase;$('targetFields').hidden=reference;
+ $('marketFields').hidden=!market;$('costFields').hidden=purchase; $('costHelp').hidden=market;
+ if(market)$('optionalCost').appendChild($('costFields'));else $('costHelp').before($('costFields'));
+ $('targetFields').hidden=false;
  $('marketHelp').textContent=reference?'この日本価格には、すでに必要な利益が含まれている前提です。同じ売上を残せる eBay 価格を逆算します。':'ここで購入して販売する場合は、税込購入額を仕入原価として使います。';
  $('costHelp').textContent=reference?'実際の仕入原価は任意です。入力すると利益も確認できます。日本の販売価格を仕入原価として扱うことはありません。':purchase?'楽天・Yahoo! の税込価格を仕入原価として計算します。':'実際に仕入先へ支払う金額を入力してください。';
  $('customsValue').disabled=state.customsMode!=='manual';for(const k of ['referenceUplift','referenceExtras'])$(k).disabled=!reference;
  $('buffer').disabled=state.model!=='consultant';for(const k of ['fvf','intl','ad','vat','threshold','upper','orderLow','orderHigh','orderThreshold'])$(k).disabled=state.model==='consultant';
- $('recommendTitle').textContent=reference?'日本価格を保つための商品価格':'目標利益に必要な商品価格';
+ $('recommendTitle').textContent=reference?'同じ収益を残す eBay おすすめ価格':'目標利益を含む eBay おすすめ価格';
  const ref=P.reference(state);$('referenceSummary').innerHTML=ref?row('税抜の日本価格（1 点）',jpy(ref.net))+(reference?row('この注文で残す目標額',state.quantity===null?'数量を入力':jpy(ref.recovery))+`<p class="help">${state.referenceExtras==='include'?'梱包・作業・想定損失などの追加費用も目標額に含めます。':'追加費用を上乗せせず、日本価格だけを回収します。'}仕入原価を引く前の金額です。</p>`:row('税込の購入原価（1 点）',jpy(ref.gross))):'';
  let error='';try{D.validateInputs(state)}catch(e){error=e.message}
- const forwardIssues=P.issues(state,'forward'),recommendIssues=P.issues(state,'recommend');
+ const recommendIssues=P.issues(state,'recommend');
  recommendation=!error&&!recommendIssues.length?P.recommend(state):null;
+ state.price=recommendation;$('price').value=recommendation??'';const forwardIssues=P.issues(state,'forward');
  $('recommended').textContent=recommendation===null?'—':usd(recommendation);$('apply').disabled=recommendation===null;
- $('recommendHint').textContent=error|| (recommendIssues.length?'あと '+recommendIssues.join('・')+' を入力してください。':recommendation===null?'この条件では目標に届きません。費用や目標を見直してください。':`購入者に請求する送料 ${usd(state.buyerShipping)} は別。税抜合計 ${usd(recommendation+state.buyerShipping)}。`);
+ $('recommendHint').textContent=error|| (recommendIssues.length?'未入力：'+recommendIssues.join('・')+'。配送・税金・利益の条件は設定で保存できます。':recommendation===null?'この条件では目標に届きません。費用や目標を見直してください。':`購入者に請求する送料 ${usd(state.buyerShipping)} は別。税抜合計 ${usd(recommendation+state.buyerShipping)}。`);
  $('inputIssues').innerHTML=state.duty===null?'関税率が未入力です。<button class="link-button" id="dutyLink">設定で入力する</button>':'';$('dutyLink')?.addEventListener('click',()=>{switchTab('settings');$('duty').focus()});
  lastResult=!error&&!forwardIssues.length?P.calc(state):null;
  $('saveHistory').disabled=!lastResult;$('exportCSV').disabled=!lastResult;
@@ -58,7 +63,7 @@ function render(){
  $('breakdown').innerHTML='<p class="empty">商品価格と必要な条件を入力すると表示します。</p>';
  $('feeBreakdown').innerHTML='<p class="help">価格を入力すると、この注文の費用を 1 項目ずつ計算します。</p>';
  $('feeCompare').textContent='20% は粗い目安です。通常は内訳を積み上げて計算します。';
- $('resultHelp').textContent=error|| (forwardIssues.length?'あと '+forwardIssues.join('・')+' を入力してください。':'');
+ $('resultHelp').textContent=error|| (forwardIssues.length?'商品価格を入力し、未入力の計算条件を設定すると明細を表示します。':'');
  if(lastResult){const r=lastResult;$('buyerTotal').textContent=usd(r.base);$('net').textContent=jpy(r.net);$('profit').textContent=r.profit===null?'原価未入力':jpy(r.profit);$('margin').textContent=r.profit===null?'—':`${r.margin.toFixed(1)}% / ${jpy(r.perUnit)}`;
  $('resultHelp').textContent=r.profit===null?'仕入原価を入力すると、原価・梱包・作業費などを引いた利益も表示できます。':'利益は、仕入・梱包・作業費・想定損失を引いた金額です。所得税等は含みません。';
  const detailed=P.calc({...state,model:'detail'}),combined=P.calc({...state,model:'consultant',buffer:state.buffer??20});
@@ -66,7 +71,7 @@ function render(){
  $('effectiveRate').textContent=r.revenue?effective.toFixed(2)+'%':'—';
  $('feeBreakdown').innerHTML=(state.model==='detail'?row(`落札手数料（FVF ${state.fvf}%・上限超過は別率）`,usd(r.fvf))+row(`海外決済手数料 ${state.intl}%`,usd(r.intl))+row(`広告費 ${state.ad??0}%`,usd(r.ad))+row('注文ごとの固定費',usd(r.order))+row(`手数料の消費税 ${state.vat}%`,usd(r.vat)):row(`まとめて概算 ${state.buffer}%`,usd(r.fvf)))+row(`為替・出金費 ${state.fxFee??0}%`,usd(r.fxCost))+row('販売・決済費用の合計',usd(r.fees+r.fxCost),'total');
  $('feeCompare').textContent=r.revenue?`内訳で計算した場合は ${((detailed.fees+detailed.fxCost)/r.revenue*100).toFixed(2)}%。${state.buffer??20}% の合算モデルと比べると、この注文の費用は ${usd(Math.abs((detailed.fees+detailed.fxCost)-(combined.fees+combined.fxCost)))} ${detailed.fees+detailed.fxCost>=combined.fees+combined.fxCost?'高く':'安く'}なります。どちらも入力条件からの試算です。`:'割合を出すには売上を入力してください。';
- $('breakdown').innerHTML=row('商品代金',usd(state.price))+row('購入者負担送料',usd(state.buyerShipping))+row('Sales Tax（売上には含めない）',usd(r.salesTax),'sub')+row('購入者支払総額',usd(r.base),'total')+row('eBay 手数料・手数料消費税',`−${usd(r.fees)}`)+row('プラットフォーム手数料控除後',usd(r.payout),'total')+row('為替・出金費',`−${usd(r.fxCost)}`)+row('関税',`−${usd(r.duty)}`)+row('通関処理費・輸入固定費',`−${usd(r.processing+(state.importFixed??0))}`)+row('配送費（燃油・追加送料込み）',`−${jpy(r.shipping)}`)+row('物流・輸入費控除後の残額',jpy(r.net),'total')+row('仕入原価（注文全体）',P.effectiveCost(state)===null?'未入力':`−${jpy(P.effectiveCost(state)*state.quantity)}`)+row('梱包・作業・固定費',`−${jpy((state.pack??0)+(state.handling??0)+(state.overhead??0))}`)+row('返品等の想定損失',`−${jpy(r.risk)}`)+row('利益',jpy(r.profit),'total');
+ $('breakdown').innerHTML=row('適用為替',`1 USD = ${state.fx} JPY`)+(reference?row('日本の税抜価格（注文全体）',jpy(ref.net*state.quantity)): '')+row('商品代金',usd(state.price))+row('購入者負担送料',usd(state.buyerShipping))+row('Sales Tax（売上には含めない）',usd(r.salesTax),'sub')+row('購入者支払総額',usd(r.base),'total')+row('eBay 手数料・手数料消費税',`−${usd(r.fees)}`)+row('プラットフォーム手数料控除後',usd(r.payout),'total')+row('為替・出金費',`−${usd(r.fxCost)}`)+row('関税',`−${usd(r.duty)}`)+row('通関処理費・輸入固定費',`−${usd(r.processing+(state.importFixed??0))}`)+row('配送費（燃油・追加送料込み）',`−${jpy(r.shipping)}`)+row('物流・輸入費控除後の残額',jpy(r.net),'total')+row('仕入原価（注文全体）',P.effectiveCost(state)===null?'未入力':`−${jpy(P.effectiveCost(state)*state.quantity)}`)+row('梱包・作業・固定費',`−${jpy((state.pack??0)+(state.handling??0)+(state.overhead??0))}`)+row('返品等の想定損失',`−${jpy(r.risk)}`)+row('利益',jpy(r.profit),'total');
  }
  const dim=state.length&&state.width&&state.height&&state.divisor?state.length*state.width*state.height/state.divisor:null;
  $('weightNote').textContent=dim===null?'寸法と除数を入れると容積重量を計算します。送料は別途入力が必要です。':`容積重量 ${dim.toFixed(2)} kg${state.weight!==null?' / 課金参考重量 '+Math.max(dim,state.weight).toFixed(2)+' kg':''}。配送会社ごとの切り上げや長尺料金は別途確認してください。`;
@@ -78,7 +83,7 @@ function update(event){read();revision++;if(event?.target.id==='fx'){updates.fxM
  render();}
 for(const id of ['productForm','settingsForm']){$(id).addEventListener('submit',e=>e.preventDefault());$(id).addEventListener('input',update)}
 $('apply').onclick=()=>{if(recommendation===null)return;state.price=recommendation;$('price').value=state.price;render();toast('商品価格を適用しました')};
-$('saveSettings').onclick=()=>{read();try{const next=commonFromState();if(localSave({settings:next})){settings=next;toast('共通設定を保存しました')}}catch(e){toast(e.message)}};
+$('saveSettings').onclick=()=>{read();try{const next=commonFromState(),nu=R.validate({...updates,fxMode:$('fxMode').value,shippingUrl:$('shippingFeed').value.trim(),manualFx:$('fxMode').value==='manual'?state.fx:updates.manualFx});if(nu.shippingUrl)R.url(nu.shippingUrl,location.href);if(nu.shippingUrl!==updates.shippingUrl)nu.shippingCheckedDay='';if(localSave({settings:next,updates:nu})){settings=next;updates=nu;revision++;toast('税金・配送・為替・利益の設定を保存しました')}}catch(e){toast(e.message)}};
 $('clear').onclick=()=>confirmAction('商品欄を空にします。共通設定・登録した箱・保存履歴は残ります。',()=>{state=P.blank(settings);applySavedFX();revision++;sync();render()});
 $('sample').onclick=()=>confirmAction('現在の入力をサンプルに置き換えます。登録済みの箱や保存履歴は消しません。',()=>{const sampleBoxes=[{id:'sample-box-a',carrier:'',name:'入力例：箱 A',length:119,width:10,height:5,weight:.5,divisor:5000,freight:3691.25,fuel:60,surcharge:0,pack:150,rateKey:'',rateDate:'',rateSource:'参考試算'},{id:'sample-box-b',carrier:'',name:'入力例：箱 B',length:119,width:10,height:10,weight:.8,divisor:5000,freight:4696.25,fuel:60,surcharge:0,pack:150,rateKey:'',rateDate:'',rateSource:'参考試算'}];boxes=D.mergeBoxes(boxes,sampleBoxes);state=P.sample();state.fxSource='入力例（実勢レートではありません）';revision++;sync();render();toast('入力例を表示しました。設定は保存するまで変更されません。')});
 function renderBoxes(){const selected=state.boxId;$('boxSelect').innerHTML='<option value="">選ばずに直接入力</option>'+boxes.map(b=>`<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('');$('boxSelect').value=boxes.some(b=>b.id===selected)?selected:'';
