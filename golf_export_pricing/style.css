@@ -7,3 +7,4 @@
 .server-status{position:static;width:max-content;margin:8px 0 16px auto;box-shadow:none;z-index:auto}.row strong{white-space:normal;text-align:right}.result-grid #margin{font-size:15px;line-height:1.6}#targetProfitButton{margin:14px 0;border-color:var(--green)}#profitCompare{margin-top:18px}.error,#recommendHint:has(strong){color:#9d3528}
 
 .calculation-notices{font-size:13px;margin-top:12px;color:var(--muted)}.calculation-notices li{margin:7px 0}.calculation-notices summary{font-weight:600}.calculation-notices ul{padding-left:20px}
+.workspace{display:block}.server-status{align-self:start;justify-self:end}
