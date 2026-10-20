@@ -3,3 +3,7 @@
 .toggle{display:flex;align-items:center;gap:11px;font-size:15px}.toggle input{width:20px;height:20px;margin:0;accent-color:var(--green)}.ai-copy{font-size:14px;line-height:1.8}.ai-copy p{margin:10px 0}.ai-copy p:first-child{margin-top:0}.ai-copy p:last-child{margin-bottom:0}
 .profit-adjust{margin:18px 0 14px;padding:16px;border:1px solid #cfe0d9;border-radius:12px;background:#f5faf7}.profit-adjust label{display:block;font-weight:700}.profit-adjust input{margin-top:7px;background:#fff}.profit-adjust .help{margin:8px 0 0}
 #categoryForm,#marketForm{border-top:1px solid var(--line);margin-top:20px;padding-top:20px}
+
+.server-status{position:static;width:max-content;margin:8px 0 16px auto;box-shadow:none;z-index:auto}.row strong{white-space:normal;text-align:right}.result-grid #margin{font-size:15px;line-height:1.6}#targetProfitButton{margin:14px 0;border-color:var(--green)}#profitCompare{margin-top:18px}.error,#recommendHint:has(strong){color:#9d3528}
+
+.calculation-notices{font-size:13px;margin-top:12px;color:var(--muted)}.calculation-notices li{margin:7px 0}.calculation-notices summary{font-weight:600}.calculation-notices ul{padding-left:20px}
