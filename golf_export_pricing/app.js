@@ -101,10 +101,18 @@ function reconcileShipment(){
 }
 for(const k of ['actualFreight','actualFuel','actualCongestion','actualDuty','actualProcessing','actualReceipt','estimateDuty','estimateProcessing','actualEarnings','actualFx','actualFees'])$(k).addEventListener('input',reconcileShipment);
 function previewPolicy(){
+ const group=$('policyGroup').value,other=$('policyOther').value;
+ $('policyPriceField').hidden=group!=='custom';
+ $('policyBreakdown').textContent='';
+ if(!group){$('policyResult').textContent='まず配送グループを選んでください。';return}
+ if(!$('policyEligible').checked){$('policyResult').textContent='対象の荷物なら、手順3にチェックしてください。';return}
+ if(other&&!$('policyMixedEligible').checked){$('policyResult').textContent='別グループを追加する前に、同じ送料割引ルールを確認してください。';return}
  try{
-  const r=ShippingPolicy.quote($('policyGroup').value,Number($('policyQty').value),$('policyOther').value,$('policyEligible').checked,$('policyPrice').value===''?null:Number($('policyPrice').value));
-  $('policyResult').textContent='初回 '+money(r.first,'USD')+' ／ 追加 '+money(r.additional,'USD')+' ／ 共通部 '+money(r.shared,'USD')+'（重複分のみ控除）／ 同梱送料 '+money(r.total,'USD');
+  const r=ShippingPolicy.quote(group,Number($('policyQty').value),other,true,$('policyPrice').value===''?null:Number($('policyPrice').value));
+  $('policyResult').textContent='送料合計 '+money(r.total,'USD');
+  $('policyBreakdown').textContent='1本目 '+money(r.first,'USD')+' ／ 同グループの2本目から、1本ごと '+money(r.additional,'USD')+(other?' ／ 別グループ1本分 '+money(ShippingPolicy.groups[other]/100,'USD')+'。共通部 '+money(r.shared,'USD')+' は一度だけ。':'');
  }catch(e){$('policyResult').textContent=e.message}
 }
-for(const k of ['policyGroup','policyQty','policyOther','policyPrice','policyEligible'])$(k).addEventListener('input',previewPolicy);
+$('policyOther').addEventListener('input',()=>{$('policyMixedEligible').checked=false;previewPolicy()});
+for(const k of ['policyGroup','policyQty','policyPrice','policyEligible','policyMixedEligible'])$(k).addEventListener('input',previewPolicy);
 previewPolicy();

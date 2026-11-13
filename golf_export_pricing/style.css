@@ -8,3 +8,4 @@
 
 .calculation-notices{font-size:13px;margin-top:12px;color:var(--muted)}.calculation-notices li{margin:7px 0}.calculation-notices summary{font-weight:600}.calculation-notices ul{padding-left:20px}
 .workspace{display:block}.server-status{align-self:start;justify-self:end}
+.policy-quick{border-top:4px solid var(--green)}.policy-quick details{margin:12px 0}.policy-quick .toggle{margin:16px 0;align-items:flex-start}.policy-quick .toggle input{flex:none}.policy-total{font-size:1.35rem;font-weight:700;margin:16px 0 8px}.policy-quick select,.policy-quick input[type=number]{min-height:44px}.policy-quick summary{padding:8px 0}
