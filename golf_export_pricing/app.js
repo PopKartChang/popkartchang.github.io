@@ -84,7 +84,6 @@ $('productForm').oninput=schedule;$('pricingSource').onchange=schedule;$('desire
 $('saveSettings').onclick=()=>{readSettings();const c=categories.find(c=>c.id===product.category);if(c&&(!c.marketId||c.marketId===settings.marketId)){c.duty=settings.duty;c.processing=settings.processing;c.mfn=settings.mfn;c.tariffMode=settings.tariffMode;}const selectedMarket=markets.find(m=>m.id===settings.marketId);if(selectedMarket)selectedMarket.importFixedJpy=settings.importFixedJpy;save();renderMasters();toast('設定を保存しました');if(settings.aiEnabled===false)$('aiCard').hidden=true;schedule()};
 $('aiEnabled').onchange=()=>{settings.aiEnabled=$('aiEnabled').checked;save();if(last)$('aiCard').hidden=!settings.aiEnabled};$('aiExplain').onclick=explainAI;
 $('clear').onclick=()=>{product={name:'',category:'',pricingSource:'wholesale',sourcePrice:null,desiredProfit:null,sku:'',origin:'',material:'',hts:'',cost:null};for(const k of Object.keys(product))if($(k))$(k).value='';updateSource();clearResult('商品を入力してください。')};
-$('sample').onclick=()=>{product={name:'N.S.PRO MODUS³ Tour 115',category:'shaft',pricingSource:'yahoo',sourcePrice:6300,desiredProfit:null,sku:'',origin:'日本',material:'スチール',hts:'9506.39.00.60',cost:4000};Object.assign(settings,{model:'detail',feePreset:'official',plan:'starter',buyerShippingMode:'auto',marketUsage:'reference',referenceExtras:'ignore',wholesaleTaxRate:10,wholesaleTaxTreatment:'include',marketId:'us',marketName:'米国',currency:'USD',fx:150,duty:12.5,dutyPayer:'seller',ddpThreshold:2500,processing:2.1,mfn:4.9,tariffMode:'japan',boxId:'box-a'});applyBox('box-a');for(const k of Object.keys(product))if($(k))$(k).value=product[k]??'';syncSettings();updateSource();schedule()};
 $('saveHistory').onclick=()=>{if(!last)return;history.unshift({...structuredClone(last),id:uid(),at:new Date().toISOString()});save();renderHistory();toast('計算条件と結果を保存しました')};$('exportCSV').onclick=()=>last&&exportCSV();
 $('historyList').onclick=e=>{const b=e.target.closest('button'),h=history.find(x=>x.id===(b?.dataset.hc||b?.dataset.hd));if(!h)return;if(b.dataset.hc)exportCSV(h);else{history=history.filter(x=>x.id!==h.id);save();renderHistory()}};
 $('marketList').onclick=e=>{const b=e.target.closest('button');if(b?.dataset.me)openForm('m',markets.find(x=>x.id===b.dataset.me));if(b?.dataset.md&&markets.length>1){markets=markets.filter(x=>x.id!==b.dataset.md);if(settings.marketId===b.dataset.md)applyMarket(markets[0].id);save();renderMasters()}};$('categoryList').onclick=e=>{const b=e.target.closest('button');if(b?.dataset.ce)openForm('c',categories.find(x=>x.id===b.dataset.ce));if(b?.dataset.cd){categories=categories.filter(x=>x.id!==b.dataset.cd);save();renderMasters()}};$('boxList').onclick=e=>{const b=e.target.closest('button');if(b?.dataset.be)openForm('b',boxes.find(x=>x.id===b.dataset.be));if(b?.dataset.bd){boxes=boxes.filter(x=>x.id!==b.dataset.bd);save();renderMasters();syncSettings()}};
@@ -113,6 +112,16 @@ function previewPolicy(){
   $('policyBreakdown').textContent='1本目 '+money(r.first,'USD')+' ／ 同グループの2本目から、1本ごと '+money(r.additional,'USD')+(other?' ／ 別グループ1本分 '+money(ShippingPolicy.groups[other]/100,'USD')+'。共通部 '+money(r.shared,'USD')+' は一度だけ。':'');
  }catch(e){$('policyResult').textContent=e.message}
 }
-$('policyOther').addEventListener('input',()=>{$('policyMixedEligible').checked=false;previewPolicy()});
-for(const k of ['policyGroup','policyQty','policyPrice','policyEligible','policyMixedEligible'])$(k).addEventListener('input',previewPolicy);
+$('policyOther').addEventListener('input',()=>{$('realExampleDetails').hidden=true;$('policyMixedEligible').checked=false;previewPolicy()});
+for(const k of ['policyGroup','policyQty','policyPrice','policyEligible','policyMixedEligible'])$(k).addEventListener('input',()=>{$('realExampleDetails').hidden=true;previewPolicy()});
 previewPolicy();
+
+$('realExample').onclick=()=>{
+ $('policyGroup').value='A03';
+ $('policyQty').value='10';
+ $('policyEligible').checked=true;
+ $('policyOther').value='';
+ $('policyMixedEligible').checked=false;
+ previewPolicy();
+ $('realExampleDetails').hidden=false;
+};
