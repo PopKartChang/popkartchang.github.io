@@ -19,9 +19,22 @@ function quote(group,quantity,other='',eligible=false,price=null,mode='store'){
  const extra=getExtra(group),otherExtra=other?getExtra(other):0;
  return {first:(fixed+extra)/100,additional:extra/100,shared:fixed/100,total:(fixed+quantity*extra+otherExtra)/100,otherAdditional:otherExtra/100};
 }
+function dplPrice(jpy,rate='0.00666667',markup='13.64'){
+ function decimal(value){
+  const str=String(value);
+  if(!/^\d{1,12}(?:\.\d{1,12})?$/.test(str))throw Error('価格・換算率・上乗せ率を確認してください。');
+  const [whole,fraction='']=str.split('.');
+  return [BigInt(whole+fraction),10n**BigInt(fraction.length)];
+ }
+ const [a,b]=decimal(jpy),[c,d]=decimal(rate),[e,f]=decimal(markup);
+ if(!a||!c)throw Error('国内売価と換算率を入力してください。');
+ const numerator=a*c*(100n*f+e),denominator=b*d*f;
+ const cents=(numerator+denominator-1n)/denominator;
+ return Number((cents/100n)*100n+99n)/100;
+}
 function reconcile({shipping,duty,processing,estimateDuty,estimateProcessing,earnings,fx,bank}){
  const total=shipping+duty+processing;
  return {total,delta:estimateDuty!=null&&estimateProcessing!=null?duty+processing-estimateDuty-estimateProcessing:null,converted:earnings!=null&&fx>0?earnings*fx-total:null,bankNet:bank!=null?bank-total:null};
 }
-root.ShippingPolicy={groups,quote,reconcile,usesSetReserve,sharedCents};
+root.ShippingPolicy={groups,quote,reconcile,usesSetReserve,sharedCents,dplPrice};
 })(globalThis);

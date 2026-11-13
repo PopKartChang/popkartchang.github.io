@@ -75,7 +75,7 @@ async function explainAI(){
 function initTurnstile(){
  if(!cfg.turnstileSiteKey){setServerStatus('pending','確認中');return}
  const script=document.createElement('script');script.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';script.async=true;
- script.onload=()=>{turnstileWidget=turnstile.render('#turnstile',{sitekey:cfg.turnstileSiteKey,appearance:'interaction-only',execution:'execute',callback:t=>{turnstileToken=t;setServerStatus('online','正常');if(pendingAI)explainAI();else if(pendingCalculate)calculate()},'expired-callback':()=>{turnstileToken=''},'error-callback':()=>{turnstileToken='';setServerStatus('error','確認エラー')}});setServerStatus('online','正常')};
+ script.onload=()=>{turnstileWidget=turnstile.render('#turnstile',{sitekey:cfg.turnstileSiteKey,appearance:'interaction-only',execution:'execute',callback:t=>{turnstileToken=t;setServerStatus('online','正常');if(listingPending)calculateListing();else if(pendingAI)explainAI();else if(pendingCalculate)calculate()},'expired-callback':()=>{turnstileToken=''},'error-callback':()=>{turnstileToken='';setServerStatus('error','確認エラー')}});setServerStatus('online','正常')};
  script.onerror=()=>setServerStatus('error','確認エラー');document.head.append(script)
 }
 
@@ -138,3 +138,59 @@ $('realExample').onclick=()=>{
  previewPolicy();
  $('realExampleDetails').hidden=false;
 };
+
+let listingPending=false,listingRevision=0;
+const listingFields=['listingDomestic','listingPriceMode','listingUnit','listingGroup','listingQty','listingEligible','listingOther','listingOtherUnit','listingMixed','listingTax','listingLogistics','listingCost','listingFx','listingRate','listingMarkup','listingSource'];
+for(const id of ['listingGroup','listingOther']){
+ $(id).add(new Option(id==='listingGroup'?'配送グループを選ぶ':'追加しない',''));
+ for(const group of Object.keys(ShippingPolicy.groups))$(id).add(new Option(group,group));
+}
+function listingNumber(id){
+ const el=$(id);
+ if(el.value==='')return null;
+ if(!el.validity.valid)throw Error('入力した金額・数量を確認してください。');
+ return Number(el.value);
+}
+function listingPreview(){
+ $('listingUnitField').hidden=$('listingPriceMode').value==='dpl';
+ try{
+  if(!listingNumber('listingDomestic'))throw Error('Shopify の国内税込売価を入力してください。');
+  const isDpl=$('listingPriceMode').value==='dpl';
+  const unit=isDpl?ShippingPolicy.dplPrice($('listingDomestic').value,$('listingRate').value,$('listingMarkup').value):listingNumber('listingUnit');
+  if(!unit)throw Error('現在の eBay 商品単価（USD）を入力してください。');
+  const group=$('listingGroup').value,other=$('listingOther').value,q=listingNumber('listingQty');
+  if(!group)throw Error('配送グループを選んでください。');
+  if(!q||q>10||!$('listingEligible').checked||(other&&!$('listingMixed').checked))throw Error('配送条件を確認してください。対象外は再見積が必要です。');
+  const otherUnit=other?listingNumber('listingOtherUnit'):0;
+  if(other&&!otherUnit)throw Error('追加商品の現在単価を入力してください。');
+  const shipping=ShippingPolicy.quote(group,q,other,true).total;
+  const goods=Math.round((unit*q+otherUnit)*100)/100,total=Math.round((goods+shipping)*100)/100,tax=listingNumber('listingTax');
+  $('listingBuyer').textContent=(isDpl?'DPL 設定による見積：':'現在の商品単価：')+money(unit,'USD')+' ／ 商品小計 '+money(goods,'USD')+' ／ 買い手送料 '+money(shipping,'USD')+' ／ 税抜合計 '+money(total,'USD')+(tax==null?'':' ／ 買い手税の見積 '+money(Math.round(total*tax)/100,'USD'));
+  $('listingCalculate').disabled=false;
+  return {goods,shipping,quantity:q+(other?1:0),tax};
+ }catch(e){$('listingBuyer').textContent=e.message;$('listingCalculate').disabled=true;return null}
+}
+async function calculateListing(){
+ const quote=listingPreview();
+ if(!quote)return;
+ const revision=listingRevision;
+ try{
+  const fx=listingNumber('listingFx')??settings.fx;
+  const currentListing={goods:quote.goods,shipping:quote.shipping,logistics:listingNumber('listingLogistics'),cost:listingNumber('listingCost')};
+  if(cfg.turnstileSiteKey&&!turnstileToken){listingPending=true;$('listingSeller').textContent='本人確認をお待ちください。';requestTurnstile();return}
+  listingPending=false;
+  const token=turnstileToken;turnstileToken='';
+  let response;
+  try{
+   response=await fetch(cfg.apiUrl.replace(/\/$/,'')+'/v1/calculate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({input:{...productInput(),quantity:quote.quantity,currency:'USD',fx,tax:quote.tax??settings.tax},currentListing,turnstileToken:token})});
+  }finally{if(cfg.turnstileSiteKey&&window.turnstile)turnstile.reset(turnstileWidget)}
+  const r=await response.json();
+  if(revision!==listingRevision)return;
+  if(!response.ok||typeof r.fees!=='number')throw Error(r.error||'試算サービスを更新中です。');
+  $('listingSeller').textContent=['商品＋買い手送料 '+money(quote.goods+quote.shipping,'USD'),'販売費 '+money(r.fees,'USD'),'換金費 '+money(r.fxCost,'USD'),'売り手換算 '+fx+'円/USD','配送・輸入費 '+(currentListing.logistics==null?'未入力':jpy(currentListing.logistics)),'控除後残額 '+(r.net==null?'未計算':jpy(r.net)),'利益 '+(r.profit==null?'未計算':jpy(r.profit)),'利益率 '+(r.margin==null?'未計算':r.margin.toFixed(2)+'%')].join(' ／ ');
+ }catch(e){if(revision===listingRevision)$('listingSeller').textContent=e.message}
+}
+$('listingMode').onchange=()=>{const current=$('listingMode').value==='current';$('listingPanel').hidden=!current;$('reversePanel').hidden=current;listingPending=false;listingRevision++;pendingCalculate=false;clearTimeout(timer);controller?.abort();if(!current)schedule()};
+for(const id of listingFields)$(id).addEventListener('input',()=>{listingPending=false;listingRevision++;if(id==='listingOther'||id==='listingGroup')$('listingMixed').checked=false;$('listingSeller').textContent='';listingPreview()});
+$('listingCalculate').onclick=calculateListing;
+listingPreview();
