@@ -107,16 +107,17 @@ function previewPolicy(){
  if(!$('policyEligible').checked){$('policyResult').textContent='対象の荷物なら、手順3にチェックしてください。';return}
  if(other&&!$('policyMixedEligible').checked){$('policyResult').textContent='別グループを追加する前に、同じ送料割引ルールを確認してください。';return}
  try{
-  const r=ShippingPolicy.quote(group,Number($('policyQty').value),other,true,$('policyPrice').value===''?null:Number($('policyPrice').value));
-  $('policyResult').textContent='送料合計 '+money(r.total,'USD');
-  $('policyBreakdown').textContent='1本目 '+money(r.first,'USD')+' ／ 同グループの2本目から、1本ごと '+money(r.additional,'USD')+(other?' ／ 別グループ1本分 '+money(ShippingPolicy.groups[other]/100,'USD')+'。共通部 '+money(r.shared,'USD')+' は一度だけ。':'');
+  const r=ShippingPolicy.quote(group,Number($('policyQty').value),other,true,$('policyPrice').value===''?null:Number($('policyPrice').value),$('policyMode').value);
+  $('policyResult').textContent=($('policyMode').value==='recovery'?'比較：全額回収の試算 ':'店家指定の送料合計 ')+money(r.total,'USD');
+  $('policyBreakdown').textContent='初回 '+money(r.first,'USD')+' ／ 同グループの追加1点ごと '+money(r.additional,'USD')+(other?' ／ 別グループ1本分 '+money(r.otherAdditional,'USD')+'。共通部 '+money(r.shared,'USD')+' は一度だけ。':'');
  }catch(e){$('policyResult').textContent=e.message}
 }
 $('policyOther').addEventListener('input',()=>{$('realExampleDetails').hidden=true;$('policyMixedEligible').checked=false;previewPolicy()});
-for(const k of ['policyGroup','policyQty','policyPrice','policyEligible','policyMixedEligible'])$(k).addEventListener('input',()=>{$('realExampleDetails').hidden=true;previewPolicy()});
+for(const k of ['policyGroup','policyQty','policyPrice','policyEligible','policyMixedEligible','policyMode'])$(k).addEventListener('input',()=>{$('realExampleDetails').hidden=true;previewPolicy()});
 previewPolicy();
 
 $('realExample').onclick=()=>{
+ $('policyMode').value='store';
  $('policyGroup').value='A03';
  $('policyQty').value='10';
  $('policyEligible').checked=true;
